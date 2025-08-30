@@ -2,15 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 
 const OPENAI_API_URL = "https://api.openai.com/v1/realtime/sessions";
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
+  const requestId = new URL(req.url).searchParams.get('_rid') || 'unknown';
+  console.log(`🎯 Processing realtime session request ${requestId}`);
+  
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
+      console.error("❌ OpenAI API key not found in environment variables");
       return NextResponse.json(
         { error: "OpenAI API key not configured" },
         { status: 500 }
       );
     }
+
+    const model = process.env.OPENAI_REALTIME_MODEL ?? "gpt-realtime";
+    const voice = process.env.OPENAI_REALTIME_VOICE ?? "alloy";
+    
+    console.log(`🔧 Creating Realtime session with model: ${model}, voice: ${voice}`);
+    console.log(`🔑 Using API key: ${apiKey.substring(0, 7)}...${apiKey.substring(apiKey.length - 4)}`);
 
     const response = await fetch(OPENAI_API_URL, {
       method: "POST",
@@ -19,8 +29,8 @@ export async function GET(_req: NextRequest) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_REALTIME_MODEL ?? "gpt-4o-realtime-preview",
-        voice: process.env.OPENAI_REALTIME_VOICE ?? "alloy",
+        model,
+        voice,
         modalities: ["text", "audio"],
         instructions:
           "You are an expert Solana NFT tutor for absolute beginners. " +
@@ -142,15 +152,40 @@ export async function GET(_req: NextRequest) {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error("OpenAI Realtime API error:", error);
+      const errorText = await response.text();
+      console.error(`❌ OpenAI Realtime API error (${response.status}):`, errorText);
+      
+      // Parse error if it's JSON
+      let errorDetail;
+      try {
+        errorDetail = JSON.parse(errorText);
+      } catch {
+        errorDetail = { message: errorText };
+      }
+      
       return NextResponse.json(
-        { error: "Failed to create realtime session" },
+        { 
+          error: "Failed to create realtime session",
+          details: errorDetail,
+          status: response.status,
+          model,
+          voice 
+        },
         { status: response.status }
       );
     }
 
     const data = await response.json();
+    console.log(`✅ Realtime session created successfully for model: ${model} (Request ${requestId})`);
+    
+    // Add server timing info for debugging
+    if (data.client_secret) {
+      const now = Math.floor(Date.now() / 1000);
+      const expiresAt = data.client_secret.expires_at;
+      const secondsUntilExpiry = expiresAt - now;
+      console.log(`⏰ Server timing: token expires in ${secondsUntilExpiry} seconds from server perspective`);
+    }
+    
     return NextResponse.json(data);
   } catch (error) {
     console.error("Error creating realtime session:", error);

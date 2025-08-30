@@ -7,7 +7,7 @@ Add these to your `.env.local` file:
 ```bash
 # OpenAI Realtime API Configuration
 OPENAI_API_KEY=sk-proj-your-openai-api-key-here
-OPENAI_REALTIME_MODEL=gpt-4o-realtime-preview
+OPENAI_REALTIME_MODEL=gpt-realtime
 OPENAI_REALTIME_VOICE=alloy
 
 # Existing Helius configuration (keep these)

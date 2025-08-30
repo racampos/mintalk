@@ -41,14 +41,62 @@ export default function VoiceTutor({ onClose }: VoiceTutorProps) {
 
   // Tool execution handler
   const executeToolCall = useCallback(async (call: PendingCall) => {
+    console.log(`🔧 Executing tool: ${call.name}`, call.args);
+    
     try {
       const parsed = JSON.parse(call.args || "{}");
       let result: any;
 
       switch (call.name) {
         case "search_nfts":
-          const searchParams = new URLSearchParams(parsed);
-          result = await fetch(`/api/search?${searchParams}`).then(r => r.json());
+          try {
+            // Build search parameters correctly
+            const searchParams = new URLSearchParams();
+            if (parsed.q) searchParams.set('q', parsed.q);
+            if (parsed.includeCompressed !== undefined) searchParams.set('includeCompressed', parsed.includeCompressed.toString());
+            if (parsed.page) searchParams.set('page', parsed.page.toString());
+            if (parsed.limit) searchParams.set('limit', parsed.limit.toString());
+            
+            console.log(`🔍 Searching NFTs with params:`, searchParams.toString());
+            const searchResponse = await fetch(`/api/search?${searchParams}`);
+            
+            if (!searchResponse.ok) {
+              throw new Error(`Search API returned ${searchResponse.status}: ${searchResponse.statusText}`);
+            }
+            
+            const fullResult = await searchResponse.json();
+            console.log(`🎯 Search result:`, fullResult);
+            
+            // Optimize result for AI - send a summary instead of full data
+            if (fullResult.items && Array.isArray(fullResult.items)) {
+              result = {
+                success: true,
+                total: fullResult.items.length,
+                query: parsed.q,
+                items: fullResult.items.slice(0, 10).map((item: any) => ({
+                  id: item.id,
+                  name: item.name,
+                  collection: item.collection,
+                  compressed: item.compressed,
+                  image_available: !!item.image
+                })),
+                message: `Found ${fullResult.items.length} NFTs matching "${parsed.q}". Showing first 10 results.`
+              };
+            } else {
+              result = {
+                success: false,
+                error: fullResult.error || "No results found",
+                query: parsed.q
+              };
+            }
+          } catch (searchError) {
+            console.error(`❌ Search API error:`, searchError);
+            result = {
+              success: false,
+              error: `Search failed: ${searchError instanceof Error ? searchError.message : String(searchError)}`,
+              query: parsed.q
+            };
+          }
           break;
 
         case "get_listings":
@@ -82,20 +130,24 @@ export default function VoiceTutor({ onClose }: VoiceTutorProps) {
 
       // Send tool result back to the model
       if (dataChannelRef.current) {
-        dataChannelRef.current.send(JSON.stringify({
+        const toolResult = {
           type: "tool_result",
           call_id: call.call_id,
           result,
-        }));
+        };
+        console.log(`📤 Sending tool result:`, toolResult);
+        dataChannelRef.current.send(JSON.stringify(toolResult));
       }
     } catch (error) {
-      console.error(`Error executing tool ${call.name}:`, error);
+      console.error(`❌ Error executing tool ${call.name}:`, error);
       if (dataChannelRef.current) {
-        dataChannelRef.current.send(JSON.stringify({
+        const errorResult = {
           type: "tool_result",
           call_id: call.call_id,
-          result: { error: "Tool execution failed" },
-        }));
+          result: { error: "Tool execution failed", details: error instanceof Error ? error.message : String(error) },
+        };
+        console.log(`📤 Sending error result:`, errorResult);
+        dataChannelRef.current.send(JSON.stringify(errorResult));
       }
     }
   }, [connected, wallet, postJSON]);
@@ -104,10 +156,12 @@ export default function VoiceTutor({ onClose }: VoiceTutorProps) {
   const handleDataChannelMessage = useCallback(async (event: MessageEvent) => {
     try {
       const message = JSON.parse(event.data);
+      console.log(`📨 Received message:`, message.type, message);
       
       // Handle different message types
       switch (message.type) {
         case "response.function_call_arguments.delta":
+          console.log(`🔄 Function call delta:`, message.name, message.delta);
           const existingCall = pendingCallsRef.current.get(message.call_id) || {
             call_id: message.call_id,
             name: message.name || "",
@@ -118,8 +172,10 @@ export default function VoiceTutor({ onClose }: VoiceTutorProps) {
           break;
 
         case "response.function_call_arguments.done":
+          console.log(`✅ Function call done:`, message.call_id);
           const completedCall = pendingCallsRef.current.get(message.call_id);
           if (completedCall) {
+            console.log(`🚀 Executing completed call:`, completedCall);
             await executeToolCall(completedCall);
             pendingCallsRef.current.delete(message.call_id);
           }
@@ -155,11 +211,52 @@ export default function VoiceTutor({ onClose }: VoiceTutorProps) {
       setError(null);
 
       // Get ephemeral token from our API
-      const tokenResponse = await fetch("/api/realtime");
+      const requestId = Math.random().toString(36).substring(2, 8);
+      console.log(`🔑 Requesting ephemeral token from /api/realtime... (Request ID: ${requestId})`);
+      
+      // Add cache-busting parameter to ensure fresh token
+      const tokenResponse = await fetch(`/api/realtime?_t=${Date.now()}&_rid=${requestId}`);
+      console.log(`📡 Token response status: ${tokenResponse.status}`);
+      
       if (!tokenResponse.ok) {
-        throw new Error("Failed to get realtime session token");
+        const errorText = await tokenResponse.text();
+        console.error(`❌ Failed to get token:`, errorText);
+        throw new Error(`Failed to get realtime session token: ${tokenResponse.status}`);
       }
-      const { client_secret } = await tokenResponse.json();
+      
+      const tokenData = await tokenResponse.json();
+      console.log(`🎟️ Token data received:`, tokenData);
+      
+      const { client_secret } = tokenData;
+      if (!client_secret || !client_secret.value) {
+        console.error(`❌ Invalid client_secret:`, client_secret);
+        throw new Error("Invalid client_secret received from server");
+      }
+      
+      console.log(`🔐 Client secret: ${client_secret.value.substring(0, 10)}...${client_secret.value.substring(client_secret.value.length - 4)}`);
+      console.log(`⏰ Expires at: ${client_secret.expires_at} (raw timestamp)`);
+      
+      // Check token freshness immediately after receiving it
+      const now = new Date();
+      const expiresAt = new Date(client_secret.expires_at * 1000);
+      const timeUntilExpiry = expiresAt.getTime() - now.getTime();
+      const secondsUntilExpiry = Math.floor(timeUntilExpiry / 1000);
+      
+      console.log(`⏰ Token freshness check:`);
+      console.log(`   Now: ${now.toISOString()}`);
+      console.log(`   Expires: ${expiresAt.toISOString()}`);
+      console.log(`   Time until expiry: ${secondsUntilExpiry} seconds`);
+      console.log(`   Token fresh: ${secondsUntilExpiry > 0}`);
+      
+      // Abort if token is already expired when we receive it
+      if (secondsUntilExpiry <= 0) {
+        throw new Error(`Token expired immediately upon receipt! Server clock may be wrong. Token was ${Math.abs(secondsUntilExpiry)} seconds old.`);
+      }
+      
+      // Warn if token expires very soon (less than 30 seconds)
+      if (secondsUntilExpiry < 30) {
+        console.warn(`⚠️ Token expires very soon (${secondsUntilExpiry}s). WebRTC connection might fail.`);
+      }
 
       // Create peer connection
       const pc = new RTCPeerConnection();
@@ -200,28 +297,60 @@ export default function VoiceTutor({ onClose }: VoiceTutorProps) {
       await pc.setLocalDescription(offer);
 
       // Send SDP offer to OpenAI Realtime endpoint
-      const realtimeResponse = await fetch("https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview", {
+      // Note: Model is already configured in the server-side session creation
+      console.log(`🌐 Connecting to OpenAI WebRTC endpoint...`);
+      console.log(`📝 SDP Offer length: ${offer.sdp?.length} characters`);
+      console.log(`🔑 Using client_secret for auth: ${client_secret.value.substring(0, 10)}...`);
+      
+      const requestHeaders = {
+        Authorization: `Bearer ${client_secret.value}`,
+        "Content-Type": "application/sdp",
+      };
+      console.log(`📋 Request headers:`, requestHeaders);
+      console.log(`🎯 Request URL: https://api.openai.com/v1/realtime`);
+      
+      const realtimeResponse = await fetch("https://api.openai.com/v1/realtime", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${client_secret.value}`,
-          "Content-Type": "application/sdp",
-        },
+        headers: requestHeaders,
         body: offer.sdp,
       });
 
+      console.log(`🔌 WebRTC response status: ${realtimeResponse.status}`);
+      
       if (!realtimeResponse.ok) {
-        throw new Error(`Realtime connection failed: ${realtimeResponse.status}`);
+        const errorText = await realtimeResponse.text();
+        console.error(`❌ WebRTC connection failed:`, {
+          status: realtimeResponse.status,
+          statusText: realtimeResponse.statusText,
+          body: errorText
+        });
+        
+        // Check if token is expired (OpenAI returns timestamp in seconds, not milliseconds)
+        const now = new Date();
+        const expiresAt = new Date(client_secret.expires_at * 1000);
+        console.log(`⏰ Token status: now=${now.toISOString()}, expires=${expiresAt.toISOString()}, expired=${now > expiresAt}`);
+        
+        throw new Error(`Realtime connection failed: ${realtimeResponse.status} - ${errorText}`);
       }
 
       const answerSDP = await realtimeResponse.text();
+      console.log(`✅ Received SDP answer, length: ${answerSDP.length} characters`);
+      
       await pc.setRemoteDescription({ type: "answer", sdp: answerSDP });
+      console.log(`🔗 WebRTC peer connection established successfully`);
 
       setIsConnected(true);
       setIsRecording(true);
       setTranscript(["🎤 Voice tutor connected! Start speaking to ask about Solana NFTs."]);
+      console.log(`🎉 Voice session ready!`);
       
     } catch (error) {
-      console.error("Connection error:", error);
+      console.error("❌ Voice connection error:", error);
+      console.error("❌ Error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        name: error instanceof Error ? error.name : 'Unknown',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       setError(error instanceof Error ? error.message : "Connection failed");
     } finally {
       setIsConnecting(false);
