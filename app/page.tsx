@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import VoiceTutor from "./components/realtime/VoiceTutor";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 type UiAsset = {
   id: string;
@@ -17,6 +20,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<UiAsset[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [showVoiceTutor, setShowVoiceTutor] = useState(false);
+
+  const { connected } = useWallet();
 
   async function runSearch(e?: React.FormEvent) {
     e?.preventDefault();
@@ -53,6 +59,28 @@ export default function Home() {
       <div className="relative z-10 mx-auto max-w-7xl px-6 py-12">
         {/* Header */}
         <div className="text-center mb-16 animate-fade-in-up">
+          {/* Top Bar with Wallet and Voice Tutor */}
+          <div className="flex justify-between items-center mb-8">
+            <div className="flex items-center gap-4">
+              <WalletMultiButton className="!bg-gradient-to-r !from-purple-600 !to-blue-600 !rounded-2xl !text-sm" />
+            </div>
+            <button
+              onClick={() => setShowVoiceTutor(true)}
+              className="flex items-center gap-3 px-6 py-3 glass-card rounded-2xl text-white hover:bg-white/10 transition-all duration-300 hover:scale-105 group"
+            >
+              <div className="relative">
+                <svg className="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse" />
+              </div>
+              <span className="font-medium">AI Voice Tutor</span>
+              <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
           <div className="inline-block mb-6 p-4 glass-effect rounded-full animate-glow">
             <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -74,6 +102,7 @@ export default function Home() {
             <span className="px-4 py-2 glass-light text-white text-sm rounded-full backdrop-blur-md border border-white/20">⚡ Lightning Fast</span>
             <span className="px-4 py-2 glass-light text-white text-sm rounded-full backdrop-blur-md border border-white/20">🎨 Beautiful UI</span>
             <span className="px-4 py-2 glass-light text-white text-sm rounded-full backdrop-blur-md border border-white/20">🔍 Smart Search</span>
+            <span className="px-4 py-2 glass-light text-white text-sm rounded-full backdrop-blur-md border border-white/20">🎤 Voice AI</span>
           </div>
         </div>
 
@@ -365,6 +394,11 @@ export default function Home() {
           </div>
         </footer>
       </div>
+
+      {/* Voice Tutor Modal */}
+      {showVoiceTutor && (
+        <VoiceTutor onClose={() => setShowVoiceTutor(false)} />
+      )}
     </main>
   );
 }
