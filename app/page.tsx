@@ -20,7 +20,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<UiAsset[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [showVoiceTutor, setShowVoiceTutor] = useState(false);
+  const [voiceSessionActive, setVoiceSessionActive] = useState(false);
 
   const { connected } = useWallet();
 
@@ -65,19 +65,31 @@ export default function Home() {
               <WalletMultiButton className="!bg-gradient-to-r !from-purple-600 !to-blue-600 !rounded-2xl !text-sm" />
             </div>
             <button
-              onClick={() => setShowVoiceTutor(true)}
-              className="flex items-center gap-3 px-6 py-3 glass-card rounded-2xl text-white hover:bg-white/10 transition-all duration-300 hover:scale-105 group"
+              onClick={() => setVoiceSessionActive(!voiceSessionActive)}
+              className={`flex items-center gap-3 px-6 py-3 glass-card rounded-2xl text-white transition-all duration-300 hover:scale-105 group ${
+                voiceSessionActive 
+                  ? 'bg-red-500/20 hover:bg-red-500/30 border-red-400/30' 
+                  : 'hover:bg-white/10'
+              }`}
             >
               <div className="relative">
                 <svg className="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                 </svg>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse" />
+                <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${
+                  voiceSessionActive 
+                    ? 'bg-red-400 animate-pulse' 
+                    : 'bg-green-400 animate-pulse'
+                }`} />
               </div>
-              <span className="font-medium">AI Voice Tutor</span>
-              <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              <span className="font-medium">
+                {voiceSessionActive ? 'End Voice Session' : 'Start Voice Session'}
+              </span>
+              {!voiceSessionActive && (
+                <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              )}
             </button>
           </div>
 
@@ -395,9 +407,12 @@ export default function Home() {
         </footer>
       </div>
 
-      {/* Voice Tutor Modal */}
-      {showVoiceTutor && (
-        <VoiceTutor onClose={() => setShowVoiceTutor(false)} />
+      {/* Background Voice Service */}
+      {voiceSessionActive && (
+        <VoiceTutor 
+          isActive={voiceSessionActive} 
+          onSessionEnd={() => setVoiceSessionActive(false)} 
+        />
       )}
     </main>
   );
