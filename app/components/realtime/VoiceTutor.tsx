@@ -128,23 +128,29 @@ export default function VoiceTutor({ onClose }: VoiceTutorProps) {
           result = { error: `Unknown tool: ${call.name}` };
       }
 
-      // Send tool result back to the model
+      // Send tool result back to the model via conversation.item.create
       if (dataChannelRef.current) {
-        const toolResult = {
-          type: "tool_result",
-          call_id: call.call_id,
-          result,
+        const toolResultMessage = {
+          type: "conversation.item.create",
+          item: {
+            type: "function_call_output",
+            call_id: call.call_id,
+            output: JSON.stringify(result),
+          },
         };
-        console.log(`📤 Sending tool result:`, toolResult);
-        dataChannelRef.current.send(JSON.stringify(toolResult));
+        console.log(`📤 Sending tool result:`, toolResultMessage);
+        dataChannelRef.current.send(JSON.stringify(toolResultMessage));
       }
     } catch (error) {
       console.error(`❌ Error executing tool ${call.name}:`, error);
       if (dataChannelRef.current) {
         const errorResult = {
-          type: "tool_result",
-          call_id: call.call_id,
-          result: { error: "Tool execution failed", details: error instanceof Error ? error.message : String(error) },
+          type: "conversation.item.create",
+          item: {
+            type: "function_call_output",
+            call_id: call.call_id,
+            output: JSON.stringify({ error: "Tool execution failed", details: error instanceof Error ? error.message : String(error) }),
+          },
         };
         console.log(`📤 Sending error result:`, errorResult);
         dataChannelRef.current.send(JSON.stringify(errorResult));
@@ -158,6 +164,17 @@ export default function VoiceTutor({ onClose }: VoiceTutorProps) {
       const message = JSON.parse(event.data);
       console.log(`📨 Received message:`, message.type, message);
       
+      // Special handling for function call messages
+      if (message.type?.includes('function_call')) {
+        console.log(`🔧 Function call message details:`, {
+          type: message.type,
+          call_id: message.call_id,
+          name: message.name,
+          delta: message.delta,
+          fullMessage: message
+        });
+      }
+      
       // Handle different message types
       switch (message.type) {
         case "response.function_call_arguments.delta":
@@ -167,6 +184,10 @@ export default function VoiceTutor({ onClose }: VoiceTutorProps) {
             name: message.name || "",
             args: ""
           };
+          // Update the name if it's provided in this delta (sometimes it comes later)
+          if (message.name) {
+            existingCall.name = message.name;
+          }
           existingCall.args += message.delta || "";
           pendingCallsRef.current.set(message.call_id, existingCall);
           break;
@@ -175,6 +196,11 @@ export default function VoiceTutor({ onClose }: VoiceTutorProps) {
           console.log(`✅ Function call done:`, message.call_id);
           const completedCall = pendingCallsRef.current.get(message.call_id);
           if (completedCall) {
+            // CRITICAL: Update the function name from the done message
+            if (message.name) {
+              completedCall.name = message.name;
+              console.log(`🎯 Updated function name to: ${message.name}`);
+            }
             console.log(`🚀 Executing completed call:`, completedCall);
             await executeToolCall(completedCall);
             pendingCallsRef.current.delete(message.call_id);
@@ -197,6 +223,34 @@ export default function VoiceTutor({ onClose }: VoiceTutorProps) {
         case "response.text.done":
           // Add a new line for the next response
           setTranscript(prev => [...prev, ""]);
+          break;
+
+        case "conversation.item.created":
+          console.log(`✅ Conversation item created:`, message);
+          // If this is a function_call_output item, trigger a response from the model
+          if (message.item?.type === "function_call_output") {
+            console.log(`🚀 Triggering model response after tool result`);
+            if (dataChannelRef.current) {
+              const responseRequest = {
+                type: "response.create",
+                response: {
+                  modalities: ["text", "audio"],
+                },
+              };
+              console.log(`📤 Requesting model response:`, responseRequest);
+              dataChannelRef.current.send(JSON.stringify(responseRequest));
+            }
+          }
+          break;
+
+        default:
+          // Log any unhandled message types, especially ones that might contain function info
+          if (message.type?.includes('function') || message.type?.includes('tool')) {
+            console.log(`🤷 Unhandled function-related message:`, message.type, message);
+          } else if (!message.type?.includes('audio') && !message.type?.includes('input_audio')) {
+            // Skip noisy audio messages but log other potentially important ones
+            console.log(`🔍 Unhandled message type:`, message.type);
+          }
           break;
       }
     } catch (error) {
