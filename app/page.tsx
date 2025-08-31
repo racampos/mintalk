@@ -2,8 +2,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import VoiceTutor from "./components/realtime/VoiceTutor";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { useWeb3AuthConnect, useWeb3AuthDisconnect } from "@web3auth/modal/react";
+import { useSolanaWallet } from "@web3auth/modal/react/solana";
 import PriceBadge, { ListingData } from "./components/PriceBadge";
 import listingQueue from "./services/listingQueue";
 
@@ -17,6 +17,39 @@ type UiAsset = {
   external_url: string | null;
 };
 
+// Web3Auth Login Button Component
+function Web3AuthLoginButton() {
+  const { connect, isConnected, loading: connectLoading, error: connectError } = useWeb3AuthConnect();
+  const { disconnect, loading: disconnectLoading, error: disconnectError } = useWeb3AuthDisconnect();
+  const { accounts } = useSolanaWallet();
+
+  const handleClick = async () => {
+    if (isConnected) {
+      await disconnect();
+    } else {
+      await connect();
+    }
+  };
+
+  const loading = connectLoading || disconnectLoading;
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      className="!bg-gradient-to-r !from-purple-600 !to-blue-600 !rounded-2xl !text-sm px-6 py-3 text-white font-medium hover:from-purple-700 hover:to-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {loading ? (
+        'Loading...'
+      ) : isConnected ? (
+        `Disconnect (${accounts?.[0]?.slice(0, 4)}...${accounts?.[0]?.slice(-4)})`
+      ) : (
+        'Login with Social'
+      )}
+    </button>
+  );
+}
+
 export default function Home() {
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,7 +60,9 @@ export default function Home() {
   // Track listing data for each NFT by mint address
   const [listingsData, setListingsData] = useState<Record<string, ListingData>>({});
 
-  const { connected } = useWallet();
+  const { isConnected } = useWeb3AuthConnect();
+  const { disconnect } = useWeb3AuthDisconnect();
+  const { accounts } = useSolanaWallet();
 
   // Handle connection status updates from VoiceTutor
   const handleConnectionStatusChange = useCallback((status: 'connecting' | 'connected' | 'disconnected') => {
@@ -118,7 +153,7 @@ export default function Home() {
           {/* Top Bar with Wallet and Voice Tutor */}
           <div className="flex justify-between items-center mb-8">
             <div className="flex items-center gap-4">
-              <WalletMultiButton className="!bg-gradient-to-r !from-purple-600 !to-blue-600 !rounded-2xl !text-sm" />
+              <Web3AuthLoginButton />
             </div>
             <button
               onClick={handleVoiceSessionToggle}

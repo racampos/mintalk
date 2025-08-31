@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { signAndSendTxWithWallet } from '../../providers/solana-wallet';
+import { useWeb3AuthConnect } from '@web3auth/modal/react';
+import { useSolanaWallet, useSignAndSendTransaction } from '@web3auth/modal/react/solana';
+import { VersionedTransaction } from '@solana/web3.js';
 
 // Global connection guard to prevent multiple instances
 let globalConnectionAttempt = false;
@@ -29,7 +30,9 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
   const [transcript, setTranscript] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const { wallet, connected } = useWallet();
+  const { isConnected: walletConnected } = useWeb3AuthConnect();
+  const { accounts } = useSolanaWallet();
+  const { signAndSendTransaction, data: transactionSignature, loading: txLoading, error: txError } = useSignAndSendTransaction();
   
   // Component ID for debugging
   const componentId = useRef(Math.random().toString(36).substring(2, 8));
@@ -161,15 +164,31 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
           break;
 
         case "request_wallet_signature":
-          if (!connected || !wallet) {
-            result = { error: "Wallet not connected. Please connect your wallet first." };
+          if (!walletConnected || !accounts || accounts.length === 0) {
+            result = { error: "Wallet not connected. Please login with your social account first." };
           } else {
-            const sigResult = await signAndSendTxWithWallet(
-              parsed.txBase64, 
-              parsed.connection || "mainnet", 
-              wallet
-            );
-            result = sigResult;
+            try {
+              // Decode the base64 transaction
+              const txBuffer = Buffer.from(parsed.txBase64, 'base64');
+              const transaction = VersionedTransaction.deserialize(txBuffer);
+              
+              // Sign and send the transaction using Web3Auth
+              await signAndSendTransaction(transaction);
+              
+              // Wait for the transaction signature result
+              if (transactionSignature) {
+                result = { signature: transactionSignature };
+              } else if (txError) {
+                result = { error: txError.message };
+              } else {
+                result = { error: "Transaction signing failed" };
+              }
+            } catch (error) {
+              console.error('Error signing transaction:', error);
+              result = { 
+                error: error instanceof Error ? error.message : 'Unknown error signing transaction' 
+              };
+            }
           }
           break;
 
@@ -209,7 +228,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         dataChannelRef.current.send(JSON.stringify(errorResult));
       }
     }
-  }, [connected, wallet, postJSON, onSearchResults, listingsData]);
+  }, [walletConnected, accounts, signAndSendTransaction, transactionSignature, txError, postJSON, onSearchResults, listingsData]);
 
   // Handle data channel messages
   const handleDataChannelMessage = useCallback(async (event: MessageEvent) => {

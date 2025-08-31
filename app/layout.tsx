@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import SolanaWalletProvider from "./providers/solana-wallet";
+import "./polyfills";
+import Web3AuthWalletProvider from "./providers/web3auth-provider";
 
 export const metadata: Metadata = {
   title: "Solana NFT Search & Voice Tutor",
@@ -15,9 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <SolanaWalletProvider>
+        <Web3AuthWalletProvider>
           {children}
-        </SolanaWalletProvider>
+        </Web3AuthWalletProvider>
       </body>
     </html>
   );
