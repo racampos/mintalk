@@ -33,13 +33,16 @@ export async function GET(req: NextRequest) {
         voice,
         modalities: ["text", "audio"],
         instructions:
-          "You are an expert Solana NFT tutor for absolute beginners. " +
-          "Your role is to help users discover, understand, and trade Solana NFTs safely. " +
-          "Always explain concepts in simple terms, ask for confirmation before any blockchain transactions, " +
-          "and guide users through each step. You have access to tools to search NFTs, check listings, " +
-          "and help prepare buy/sell transactions. Be encouraging and educational. " +
+          "You are an expert Solana NFT trading assistant with FULL TRANSACTION CAPABILITIES. " +
+          "Your role is to help users discover, understand, and trade Solana NFTs safely using Web3Auth embedded wallets. " +
+          "You CAN execute actual NFT purchases and sales, not just guide users through them. " +
+          "When users want to buy an NFT: 1) Get their wallet info with get_wallet_info, 2) Get listings with get_listings, 3) Confirm price with user, 4) Execute purchase with buy_nft + request_wallet_signature. " +
+          "Always explain concepts in simple terms, ask for explicit confirmation before spending SOL, " +
+          "and execute transactions when users confirm. You have tools to search NFTs, check listings, " +
+          "and execute complete buy/sell transactions. Be encouraging and educational. " +
           "IMPORTANT: When checking listings or trading NFTs, always use the mint_address (not the name) from search results. " +
-          "Mint addresses are long base58 strings like 'A7xKXtQ...', not short names like 'NFT #1234'.",
+          "Mint addresses are long base58 strings like 'A7xKXtQ...', not short names like 'NFT #1234'. " +
+          "For buy_nft: use mint=tokenMint, listingId=id, price=price from get_listings response.",
         tools: [
           {
             type: "function",
@@ -86,26 +89,34 @@ export async function GET(req: NextRequest) {
           {
             type: "function",
             name: "buy_nft",
-            description: "Prepare a buy transaction for an NFT listing (requires wallet connection)",
+            description: "Execute a complete NFT purchase - creates buy transaction and processes payment via Web3Auth wallet",
             parameters: {
               type: "object",
               properties: {
+                mint: { 
+                  type: "string",
+                  description: "The NFT mint address (tokenMint from listings)"
+                },
                 listingId: { 
                   type: "string",
-                  description: "The listing ID from the marketplace"
+                  description: "The listing ID from the marketplace (id from listings)"
+                },
+                price: { 
+                  type: "number",
+                  description: "The listing price in SOL"
                 },
                 buyer: { 
                   type: "string",
                   description: "The buyer's wallet public key"
                 },
               },
-              required: ["listingId", "buyer"],
+              required: ["mint", "listingId", "price", "buyer"],
             },
           },
           {
             type: "function",
             name: "sell_nft",
-            description: "Prepare a sell/listing transaction for an owned NFT (requires wallet connection)",
+            description: "Execute NFT listing for sale - creates listing transaction and posts NFT to marketplace via Web3Auth wallet",
             parameters: {
               type: "object",
               properties: {
@@ -128,7 +139,7 @@ export async function GET(req: NextRequest) {
           {
             type: "function",
             name: "request_wallet_signature",
-            description: "Request user to sign and send a prepared transaction to the blockchain",
+            description: "Execute blockchain transaction by signing and submitting with the connected Web3Auth wallet",
             parameters: {
               type: "object",
               properties: {
@@ -163,6 +174,15 @@ export async function GET(req: NextRequest) {
                 }
               },
               required: ["mints"],
+            },
+          },
+          {
+            type: "function",
+            name: "get_wallet_info",
+            description: "Get the current connected Web3Auth wallet address and connection status",
+            parameters: {
+              type: "object",
+              properties: {},
             },
           },
         ],

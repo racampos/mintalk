@@ -524,6 +524,8 @@ export default function Home() {
           onConnectionStatusChange={handleConnectionStatusChange}
           onSearchResults={handleVoiceSearchResults}
           listingsData={listingsData}
+          walletConnected={isConnected}
+          walletAccounts={accounts}
         />
       )}
     </main>

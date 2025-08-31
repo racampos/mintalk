@@ -21,17 +21,18 @@ interface VoiceTutorProps {
   onConnectionStatusChange: (status: 'connecting' | 'connected' | 'disconnected') => void;
   onSearchResults: (results: { items: any[], query: string, searchNote?: string }) => void;
   listingsData?: Record<string, any>;
+  walletConnected?: boolean;
+  walletAccounts?: string[];
 }
 
-export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults, listingsData = {} }: VoiceTutorProps) {
+export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults, listingsData = {}, walletConnected, walletAccounts }: VoiceTutorProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const { isConnected: walletConnected } = useWeb3AuthConnect();
-  const { accounts } = useSolanaWallet();
+  // Wallet connection state is now passed as props from parent component
   const { signAndSendTransaction, data: transactionSignature, loading: txLoading, error: txError } = useSignAndSendTransaction();
   
   // Component ID for debugging
@@ -164,36 +165,66 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
           break;
 
         case "request_wallet_signature":
-          if (!walletConnected || !accounts || accounts.length === 0) {
+          if (!walletConnected || !walletAccounts || walletAccounts.length === 0) {
             result = { error: "Wallet not connected. Please login with your social account first." };
           } else {
-            try {
-              // Decode the base64 transaction
-              const txBuffer = Buffer.from(parsed.txBase64, 'base64');
-              const transaction = VersionedTransaction.deserialize(txBuffer);
-              
-              // Sign and send the transaction using Web3Auth
-              await signAndSendTransaction(transaction);
-              
-              // Wait for the transaction signature result
-              if (transactionSignature) {
-                result = { signature: transactionSignature };
-              } else if (txError) {
-                result = { error: txError.message };
-              } else {
-                result = { error: "Transaction signing failed" };
-              }
-            } catch (error) {
-              console.error('Error signing transaction:', error);
+            // Validate transaction data
+            if (!parsed.txBase64 || parsed.txBase64.trim() === "") {
               result = { 
-                error: error instanceof Error ? error.message : 'Unknown error signing transaction' 
+                error: "No transaction data provided. The buy transaction may have failed to prepare properly." 
               };
+            } else {
+              try {
+                // Decode the base64 transaction
+                const txBuffer = Buffer.from(parsed.txBase64, 'base64');
+                const transaction = VersionedTransaction.deserialize(txBuffer);
+                
+                // Sign and send the transaction using Web3Auth
+                await signAndSendTransaction(transaction);
+                
+                // Wait for the transaction signature result
+                if (transactionSignature) {
+                  result = { signature: transactionSignature };
+                } else if (txError) {
+                  result = { error: txError.message };
+                } else {
+                  result = { error: "Transaction signing failed" };
+                }
+              } catch (error) {
+                console.error('Error signing transaction:', error);
+                result = { 
+                  error: error instanceof Error ? error.message : 'Unknown error signing transaction' 
+                };
+              }
             }
           }
           break;
 
         case "get_price_summary":
           result = await postJSON("/api/agent-tools/price-summary", parsed);
+          break;
+
+        case "get_wallet_info":
+          // Use wallet state from parent props instead of local hooks
+          // Debug logging to see what's happening
+          console.log(`🔍 Wallet info check: walletConnected=${walletConnected}, walletAccounts=${walletAccounts?.length || 0}`, walletAccounts);
+          
+          if (!walletConnected || !walletAccounts || walletAccounts.length === 0) {
+            result = { 
+              connected: false, 
+              walletConnected: walletConnected || false,
+              accountsLength: walletAccounts?.length || 0,
+              error: "No wallet connected. Please sign in with your social account first." 
+            };
+          } else {
+            result = { 
+              connected: true, 
+              address: walletAccounts[0],
+              provider: "Web3Auth",
+              walletConnected: walletConnected || false,
+              accountsLength: walletAccounts.length
+            };
+          }
           break;
 
         default:
@@ -228,29 +259,26 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         dataChannelRef.current.send(JSON.stringify(errorResult));
       }
     }
-  }, [walletConnected, accounts, signAndSendTransaction, transactionSignature, txError, postJSON, onSearchResults, listingsData]);
+  }, [walletConnected, walletAccounts, signAndSendTransaction, transactionSignature, txError, postJSON, onSearchResults, listingsData]);
 
   // Handle data channel messages
   const handleDataChannelMessage = useCallback(async (event: MessageEvent) => {
     try {
       const message = JSON.parse(event.data);
-      console.log(`📨 Received message:`, message.type, message);
+      // Reduced logging - only show important message types
+      if (message.type === 'error' || message.type === 'session.updated') {
+        console.log(`📨 Received message:`, message.type, message);
+      }
       
       // Special handling for function call messages
       if (message.type?.includes('function_call')) {
-        console.log(`🔧 Function call message details:`, {
-          type: message.type,
-          call_id: message.call_id,
-          name: message.name,
-          delta: message.delta,
-          fullMessage: message
-        });
+        // Reduced function call logging (only for debugging specific issues)
       }
       
       // Handle different message types
       switch (message.type) {
         case "response.function_call_arguments.delta":
-          console.log(`🔄 Function call delta:`, message.name, message.delta);
+          // Function call delta (reduced logging)
           const existingCall = pendingCallsRef.current.get(message.call_id) || {
             call_id: message.call_id,
             name: message.name || "",
@@ -298,10 +326,9 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
           break;
 
         case "conversation.item.created":
-          console.log(`✅ Conversation item created:`, message);
+          // Conversation item created (reduced logging)
           // If this is a function_call_output item, trigger a response from the model
           if (message.item?.type === "function_call_output") {
-            console.log(`🚀 Triggering model response after tool result`);
             if (dataChannelRef.current) {
               const responseRequest = {
                 type: "response.create",
@@ -309,18 +336,15 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
                   modalities: ["text", "audio"],
                 },
               };
-              console.log(`📤 Requesting model response:`, responseRequest);
+              // Requesting model response (reduced logging)
               dataChannelRef.current.send(JSON.stringify(responseRequest));
             }
           }
           break;
 
         default:
-          // Log any unhandled message types, especially ones that might contain function info
-          if (message.type?.includes('function') || message.type?.includes('tool')) {
-            console.log(`🤷 Unhandled function-related message:`, message.type, message);
-          } else if (!message.type?.includes('audio') && !message.type?.includes('input_audio')) {
-            // Skip noisy audio messages but log other potentially important ones
+          // Reduced logging - only log truly unexpected message types
+          if (message.type?.includes('error') && !message.type?.includes('audio')) {
             console.log(`🔍 Unhandled message type:`, message.type);
           }
           break;
