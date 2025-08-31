@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
           "and execute complete buy/sell transactions. Be encouraging and educational. " +
           "IMPORTANT: When checking listings or trading NFTs, always use the mint_address (not the name) from search results. " +
           "Mint addresses are long base58 strings like 'A7xKXtQ...', not short names like 'NFT #1234'. " +
-          "For buy_nft: use mint=tokenMint, listingId=id, price=price from get_listings response.",
+          "For buy_nft: use mint=tokenMint, listingId=id, seller=seller, price=price from get_listings response.",
         tools: [
           {
             type: "function",
@@ -101,6 +101,10 @@ export async function GET(req: NextRequest) {
                   type: "string",
                   description: "The listing ID from the marketplace (id from listings)"
                 },
+                seller: { 
+                  type: "string",
+                  description: "The seller's wallet address (seller from listings)"
+                },
                 price: { 
                   type: "number",
                   description: "The listing price in SOL"
@@ -110,7 +114,7 @@ export async function GET(req: NextRequest) {
                   description: "The buyer's wallet public key"
                 },
               },
-              required: ["mint", "listingId", "price", "buyer"],
+              required: ["mint", "listingId", "seller", "price", "buyer"],
             },
           },
           {
