@@ -39,8 +39,10 @@ export async function GET(req: NextRequest) {
   let items: DasAsset[] = [];
 
   if (candidates.length) {
+    // For specific NFT searches (contains #), use larger limit to find specific items
+    const searchLimit = q.includes('#') ? Math.min(limit * 5, 500) : limit;
     const results = await Promise.all(
-      candidates.map((c) => getAssetsByCollection(c.address, page, limit))
+      candidates.map((c) => getAssetsByCollection(c.address, page, searchLimit))
     );
     items = results.flatMap((r) => r.items ?? []);
   } else {
@@ -62,7 +64,13 @@ export async function GET(req: NextRequest) {
   // 3) Filter by keyword locally
   const filtered = items.filter((a) => textMatches(a, q));
 
-  // 4) Shape response
+  // 4) Handle empty results with helpful message
+  let searchNote = null;
+  if (filtered.length === 0 && items.length > 0 && q.includes('#')) {
+    searchNote = `Specific NFT "${q}" not found in our search index. Try searching for just the collection name (e.g., "Goatys") to browse available NFTs, or check Magic Eden directly.`;
+  }
+
+  // 5) Shape response
   const minimal = filtered.map((a) => ({
     id: a.id,
     name: a.content?.metadata?.name ?? "Untitled",
@@ -79,5 +87,10 @@ export async function GET(req: NextRequest) {
     external_url: a.content?.links?.external_url ?? null,
   }));
 
-  return NextResponse.json({ items: minimal, page, limit });
+  return NextResponse.json({ 
+    items: minimal, 
+    page, 
+    limit,
+    ...(searchNote && { searchNote })
+  });
 }

@@ -18,7 +18,7 @@ interface VoiceTutorProps {
   isActive: boolean;
   onSessionEnd: () => void;
   onConnectionStatusChange: (status: 'connecting' | 'connected' | 'disconnected') => void;
-  onSearchResults: (results: { items: any[], query: string }) => void;
+  onSearchResults: (results: { items: any[], query: string, searchNote?: string }) => void;
   listingsData?: Record<string, any>;
 }
 
@@ -90,7 +90,8 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
               console.log(`🎙️ Updating UI with voice search results for query: "${parsed.q}"`);
               onSearchResults({
                 items: fullResult.items,
-                query: parsed.q
+                query: parsed.q,
+                searchNote: fullResult.searchNote
               });
 
               // Generate price summary from available listings data

@@ -39,11 +39,11 @@ export default function Home() {
   }, []);
 
   // Handle search results from voice tutor
-  const handleVoiceSearchResults = useCallback((results: { items: UiAsset[], query: string }) => {
+  const handleVoiceSearchResults = useCallback((results: { items: UiAsset[], query: string, searchNote?: string }) => {
     console.log(`🎙️ Voice search results received:`, { count: results.items.length, query: results.query });
     setItems(results.items);
     setQ(results.query); // Update search box to show what was searched
-    setError(null);
+    setError(results.searchNote || null);
     setLoading(false);
     // Clear previous listing data and queue cache when new search results arrive
     setListingsData({});
@@ -86,6 +86,11 @@ export default function Home() {
       );
       const json = await res.json();
       setItems(json.items ?? []);
+      
+      // Show helpful message for missing specific NFTs
+      if (json.searchNote) {
+        setError(json.searchNote);
+      }
     } catch (err: any) {
       setError(err?.message ?? "Search failed");
     } finally {
