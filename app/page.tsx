@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import VoiceTutor from "./components/realtime/VoiceTutor";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -21,8 +21,38 @@ export default function Home() {
   const [items, setItems] = useState<UiAsset[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [voiceSessionActive, setVoiceSessionActive] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
 
   const { connected } = useWallet();
+
+  // Handle connection status updates from VoiceTutor
+  const handleConnectionStatusChange = useCallback((status: 'connecting' | 'connected' | 'disconnected') => {
+    console.log(`🔄 Parent received status change: ${status}`);
+    setConnectionStatus(status);
+    if (status === 'disconnected') {
+      setVoiceSessionActive(false);
+    }
+  }, []);
+
+  // Handle voice session button click
+  const handleVoiceSessionToggle = useCallback(() => {
+    console.log(`🔘 Button clicked - current connectionStatus: ${connectionStatus}`);
+    if (connectionStatus === 'connecting') {
+      // Don't allow new sessions while connecting
+      console.log(`🔘 Ignoring click - connection in progress`);
+      return;
+    }
+    
+    if (connectionStatus === 'connected') {
+      // End the current session
+      console.log(`🔘 Ending voice session`);
+      setVoiceSessionActive(false);
+    } else {
+      // Start a new session
+      console.log(`🔘 Starting voice session`);
+      setVoiceSessionActive(true);
+    }
+  }, [connectionStatus]);
 
   async function runSearch(e?: React.FormEvent) {
     e?.preventDefault();
@@ -65,10 +95,13 @@ export default function Home() {
               <WalletMultiButton className="!bg-gradient-to-r !from-purple-600 !to-blue-600 !rounded-2xl !text-sm" />
             </div>
             <button
-              onClick={() => setVoiceSessionActive(!voiceSessionActive)}
+              onClick={handleVoiceSessionToggle}
+              disabled={connectionStatus === 'connecting'}
               className={`flex items-center gap-3 px-6 py-3 glass-card rounded-2xl text-white transition-all duration-300 hover:scale-105 group ${
-                voiceSessionActive 
+                connectionStatus === 'connected'
                   ? 'bg-red-500/20 hover:bg-red-500/30 border-red-400/30' 
+                  : connectionStatus === 'connecting'
+                  ? 'bg-yellow-500/20 border-yellow-400/30 cursor-wait'
                   : 'hover:bg-white/10'
               }`}
             >
@@ -76,16 +109,23 @@ export default function Home() {
                 <svg className="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                 </svg>
-                <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${
-                  voiceSessionActive 
-                    ? 'bg-red-400 animate-pulse' 
-                    : 'bg-green-400 animate-pulse'
-                }`} />
+                {/* Only show dot when connecting or connected */}
+                {connectionStatus !== 'disconnected' && (
+                  <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full animate-pulse ${
+                    connectionStatus === 'connected' 
+                      ? 'bg-green-400' 
+                      : 'bg-yellow-400'
+                  }`} />
+                )}
               </div>
               <span className="font-medium">
-                {voiceSessionActive ? 'End Voice Session' : 'Start Voice Session'}
+                {connectionStatus === 'connected' 
+                  ? 'End Voice Session' 
+                  : connectionStatus === 'connecting'
+                  ? 'Connecting...'
+                  : 'Start Voice Session'}
               </span>
-              {!voiceSessionActive && (
+              {connectionStatus === 'disconnected' && (
                 <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -411,7 +451,8 @@ export default function Home() {
       {voiceSessionActive && (
         <VoiceTutor 
           isActive={voiceSessionActive} 
-          onSessionEnd={() => setVoiceSessionActive(false)} 
+          onSessionEnd={() => setVoiceSessionActive(false)}
+          onConnectionStatusChange={handleConnectionStatusChange}
         />
       )}
     </main>

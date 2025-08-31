@@ -17,9 +17,10 @@ interface PendingCall {
 interface VoiceTutorProps {
   isActive: boolean;
   onSessionEnd: () => void;
+  onConnectionStatusChange: (status: 'connecting' | 'connected' | 'disconnected') => void;
 }
 
-export default function VoiceTutor({ isActive, onSessionEnd }: VoiceTutorProps) {
+export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange }: VoiceTutorProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -32,6 +33,9 @@ export default function VoiceTutor({ isActive, onSessionEnd }: VoiceTutorProps) 
   const componentId = useRef(Math.random().toString(36).substring(2, 8));
   
 
+
+  // Status changes are now handled directly when state changes occur
+  // This eliminates React state batching/timing issues
 
   // Notify parent when session ends
   useEffect(() => {
@@ -292,8 +296,13 @@ export default function VoiceTutor({ isActive, onSessionEnd }: VoiceTutorProps) 
       globalConnectionAttempt = true;
       globalConnectionId = componentId.current;
       connectionAttemptRef.current = true;
+      console.log(`🔄 VoiceTutor [${componentId.current}] Setting isConnecting = true`);
       setIsConnecting(true);
       setError(null);
+      
+      // Immediately notify parent of connecting status
+      console.log(`🔄 VoiceTutor [${componentId.current}] Directly calling onConnectionStatusChange('connecting')`);
+      onConnectionStatusChange('connecting');
 
       // Safety timeout to reset global flags if connection hangs
       timeoutId = setTimeout(() => {
@@ -431,10 +440,16 @@ export default function VoiceTutor({ isActive, onSessionEnd }: VoiceTutorProps) 
       await pc.setRemoteDescription({ type: "answer", sdp: answerSDP });
       console.log(`🔗 WebRTC peer connection established successfully`);
 
+      console.log(`🔄 VoiceTutor [${componentId.current}] Setting isConnecting = false, isConnected = true`);
+      setIsConnecting(false);  // Clear connecting state first
       setIsConnected(true);
       setIsRecording(true);
       setTranscript(["🎤 Voice tutor connected! Start speaking to ask about Solana NFTs."]);
       console.log(`🎉 Voice session ready!`);
+      
+      // Immediately notify parent of connected status
+      console.log(`🔄 VoiceTutor [${componentId.current}] Directly calling onConnectionStatusChange('connected')`);
+      onConnectionStatusChange('connected');
       
     } catch (error) {
       console.error("❌ Voice connection error:", error);
@@ -444,18 +459,26 @@ export default function VoiceTutor({ isActive, onSessionEnd }: VoiceTutorProps) 
         stack: error instanceof Error ? error.stack : undefined
       });
       setError(error instanceof Error ? error.message : "Connection failed");
+      
+      // Notify parent of connection failure
+      console.log(`🔄 VoiceTutor [${componentId.current}] Connection failed - directly calling onConnectionStatusChange('disconnected')`);
+      onConnectionStatusChange('disconnected');
     } finally {
       // Clear the timeout
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
+      
+      // Don't check connection state here - if we succeeded, we already called 'connected'
+      // If we failed, the catch block already called 'disconnected'
+      
       setIsConnecting(false);
       connectionAttemptRef.current = false;
       globalConnectionAttempt = false;
       globalConnectionId = null;
       console.log(`🔄 VoiceTutor [${componentId.current}] Connection attempt reset`);
     }
-  }, [handleDataChannelMessage]);
+  }, [handleDataChannelMessage, onConnectionStatusChange]);
 
   // Disconnect from the session
   const disconnect = useCallback(() => {
@@ -479,7 +502,11 @@ export default function VoiceTutor({ isActive, onSessionEnd }: VoiceTutorProps) 
     connectionAttemptRef.current = false; // Reset connection flag
     // DON'T reset global flags during disconnect - only in connect finally block
     console.log(`🔄 VoiceTutor [${componentId.current}] Session disconnected (global flags preserved)`);
-  }, []);
+    
+    // Immediately notify parent of disconnected status
+    console.log(`🔄 VoiceTutor [${componentId.current}] Directly calling onConnectionStatusChange('disconnected')`);
+    onConnectionStatusChange('disconnected');
+  }, [onConnectionStatusChange]);
 
   // Auto-trigger connection/disconnection based on isActive prop
   useEffect(() => {
