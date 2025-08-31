@@ -1,0 +1,20 @@
+# Cursor AI Assistant Rules
+
+## Code Verification Rule
+
+**CRITICAL: NEVER commit code until it has been verified to work by the user.**
+
+- Always test changes first and get user confirmation that they work
+- Only commit after the user explicitly confirms the fix is working
+- If debugging is needed, add debugging code, test, iterate, then commit once fixed
+- Exception: Only commit debugging/logging code if explicitly requested by user for troubleshooting
+
+## Development Flow
+
+1. Make changes
+2. Test with user
+3. Get user verification that it works
+4. THEN commit with descriptive message
+5. Move to next task
+
+## Never assume code works - always verify first!

@@ -38,17 +38,14 @@ export default function Home() {
   const handleVoiceSessionToggle = useCallback(() => {
     console.log(`🔘 Button clicked - current connectionStatus: ${connectionStatus}`);
     if (connectionStatus === 'connecting') {
-      // Don't allow new sessions while connecting
       console.log(`🔘 Ignoring click - connection in progress`);
       return;
     }
     
     if (connectionStatus === 'connected') {
-      // End the current session
       console.log(`🔘 Ending voice session`);
       setVoiceSessionActive(false);
     } else {
-      // Start a new session
       console.log(`🔘 Starting voice session`);
       setVoiceSessionActive(true);
     }

@@ -37,12 +37,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
   // Status changes are now handled directly when state changes occur
   // This eliminates React state batching/timing issues
 
-  // Notify parent when session ends
-  useEffect(() => {
-    if (!isConnected && isActive) {
-      onSessionEnd();
-    }
-  }, [isConnected, isActive, onSessionEnd]);
+  // Session end management is handled by the disconnect() function and parent state
   
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
@@ -521,9 +516,25 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
     }
   }, [isActive, isConnected, isConnecting, connect, disconnect]);
 
-  // Component cleanup on unmount
+  // Store current connection state in ref for cleanup
+  const isConnectedRef = useRef(isConnected);
+  const onConnectionStatusChangeRef = useRef(onConnectionStatusChange);
+  
+  // Update refs when values change
+  useEffect(() => {
+    isConnectedRef.current = isConnected;
+    onConnectionStatusChangeRef.current = onConnectionStatusChange;
+  }, [isConnected, onConnectionStatusChange]);
+
+  // Component cleanup on unmount - no dependencies to prevent premature execution
   useEffect(() => {
     return () => {
+      // If component unmounts while connected, notify parent of disconnection
+      if (isConnectedRef.current) {
+        console.log(`🔄 VoiceTutor [${componentId.current}] Unmounting while connected - notifying parent`);
+        onConnectionStatusChangeRef.current('disconnected');
+      }
+      
       // Clean up local resources but preserve global connection guard
       if (peerConnectionRef.current) {
         peerConnectionRef.current.close();
@@ -538,7 +549,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         audioElementRef.current = null;
       }
     };
-  }, []);
+  }, []); // ✅ Empty dependencies - cleanup only runs on unmount
 
   // Background service - no UI needed
   return null;
