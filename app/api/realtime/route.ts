@@ -149,6 +149,22 @@ export async function GET(req: NextRequest) {
               required: ["txBase64"],
             },
           },
+          {
+            type: "function",
+            name: "get_price_summary",
+            description: "Get a comprehensive price summary for multiple NFTs from search results",
+            parameters: {
+              type: "object",
+              properties: {
+                mints: { 
+                  type: "array",
+                  items: { type: "string" },
+                  description: "Array of NFT mint addresses to check for pricing"
+                }
+              },
+              required: ["mints"],
+            },
+          },
         ],
       }),
     });

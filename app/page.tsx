@@ -4,6 +4,8 @@ import Image from "next/image";
 import VoiceTutor from "./components/realtime/VoiceTutor";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import PriceBadge, { ListingData } from "./components/PriceBadge";
+import listingQueue from "./services/listingQueue";
 
 type UiAsset = {
   id: string;
@@ -22,6 +24,8 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [voiceSessionActive, setVoiceSessionActive] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
+  // Track listing data for each NFT by mint address
+  const [listingsData, setListingsData] = useState<Record<string, ListingData>>({});
 
   const { connected } = useWallet();
 
@@ -41,6 +45,14 @@ export default function Home() {
     setQ(results.query); // Update search box to show what was searched
     setError(null);
     setLoading(false);
+    // Clear previous listing data and queue cache when new search results arrive
+    setListingsData({});
+    listingQueue.clearCache();
+  }, []);
+
+  // Handle listing data updates from PriceBadges
+  const handleListingData = useCallback((mint: string, data: ListingData) => {
+    setListingsData(prev => ({ ...prev, [mint]: data }));
   }, []);
 
   // Handle voice session button click
@@ -65,6 +77,9 @@ export default function Home() {
     if (!q.trim()) return;
     setLoading(true);
     setError(null);
+    // Clear previous listing data and queue cache when new search is performed
+    setListingsData({});
+    listingQueue.clearCache();
     try {
       const res = await fetch(
         `/api/search?q=${encodeURIComponent(q)}&limit=60`
@@ -307,6 +322,12 @@ export default function Home() {
                   {/* Holographic overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
                   
+                  {/* Price Badge */}
+                  <PriceBadge 
+                    mint={a.id} 
+                    onListingData={handleListingData}
+                  />
+
                   {/* Advanced cNFT badge */}
                   {a.compressed && (
                     <div className="absolute top-4 right-4">
@@ -460,6 +481,7 @@ export default function Home() {
           onSessionEnd={() => setVoiceSessionActive(false)}
           onConnectionStatusChange={handleConnectionStatusChange}
           onSearchResults={handleVoiceSearchResults}
+          listingsData={listingsData}
         />
       )}
     </main>

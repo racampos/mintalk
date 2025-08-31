@@ -25,9 +25,15 @@ export async function GET(req: NextRequest) {
 
   if (!q) return NextResponse.json({ items: [], page, limit });
 
-  // 1) Fuzzy match collections by name (simple contains; swap with better scorer if desired)
+  // 1) Smart collection matching - match both ways (collection in query OR query in collection)
+  const qLower = q.toLowerCase();
   const candidates = registry
-    .filter((c) => c.name.toLowerCase().includes(q.toLowerCase()))
+    .filter((c) => {
+      const nameLower = c.name.toLowerCase();
+      // Match if collection name is in query (e.g., "Goatys" in "Goatys #990")
+      // OR if query is in collection name (e.g., "mad" in "Mad Lads")
+      return qLower.includes(nameLower) || nameLower.includes(qLower);
+    })
     .slice(0, 3);
 
   let items: DasAsset[] = [];
@@ -38,15 +44,19 @@ export async function GET(req: NextRequest) {
     );
     items = results.flatMap((r) => r.items ?? []);
   } else {
-    // Fallback: a broad search by type. (DAS is structured, not full-text.)
-    // We'll request NFTs and then apply the same client-side text filter.
-    const res = await searchAssets({
-      tokenType: includeCompressed ? "nonFungible" : "regularNft", // regularNft = uncompressed only
-      page,
-      limit,
-      sortBy: { sortBy: "recent_action", sortDirection: "desc" },
-    });
-    items = res.items ?? [];
+    // Fallback: a broad search without tokenType restriction  
+    // We'll request recent NFTs and then apply client-side text filter
+    try {
+      const res = await searchAssets({
+        page,
+        limit,
+        sortBy: { sortBy: "recent_action", sortDirection: "desc" },
+      });
+      items = res.items ?? [];
+    } catch (error) {
+      console.error(`Search API fallback failed:`, error);
+      items = [];
+    }
   }
 
   // 3) Filter by keyword locally

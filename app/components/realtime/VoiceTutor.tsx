@@ -19,9 +19,10 @@ interface VoiceTutorProps {
   onSessionEnd: () => void;
   onConnectionStatusChange: (status: 'connecting' | 'connected' | 'disconnected') => void;
   onSearchResults: (results: { items: any[], query: string }) => void;
+  listingsData?: Record<string, any>;
 }
 
-export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults }: VoiceTutorProps) {
+export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults, listingsData = {} }: VoiceTutorProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -91,6 +92,28 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
                 items: fullResult.items,
                 query: parsed.q
               });
+
+              // Generate price summary from available listings data
+              const listingsCount = Object.keys(listingsData).length;
+              const listedNFTs = Object.values(listingsData).filter((listing: any) => listing.status === 'listed');
+              const priceRange = listedNFTs.length > 0 ? {
+                min: Math.min(...listedNFTs.map((l: any) => l.price || 0)),
+                max: Math.max(...listedNFTs.map((l: any) => l.price || 0)),
+                count: listedNFTs.length
+              } : null;
+
+              let priceMessage = "";
+              if (priceRange && priceRange.count > 0) {
+                if (priceRange.count === 1) {
+                  priceMessage = ` I found 1 NFT currently listed for ${priceRange.min.toFixed(2)} SOL.`;
+                } else {
+                  priceMessage = ` I found ${priceRange.count} NFTs with active listings, ranging from ${priceRange.min.toFixed(2)} to ${priceRange.max.toFixed(2)} SOL.`;
+                }
+              } else if (listingsCount > 0) {
+                priceMessage = " I'm still checking prices in the background - most appear to not be currently listed.";
+              } else {
+                priceMessage = " I'm now checking current market prices for these NFTs.";
+              }
               
               // Optimize result for AI - include sample NFTs with mint addresses for reference
               result = {
@@ -98,13 +121,14 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
                 total: fullResult.items.length,
                 query: parsed.q,
                 ui_updated: true,
+                price_summary: priceRange,
                 sample_nfts: fullResult.items.slice(0, 5).map((item: any) => ({
                   name: item.name,
                   mint_address: item.id,
                   collection: item.collection,
                   compressed: item.compressed
                 })),
-                message: `Successfully found ${fullResult.items.length} NFTs matching "${parsed.q}". The search results are now displayed on your screen in a visual grid. I have the mint addresses for the NFTs if you need to check prices or get more details about any specific NFT.`
+                message: `Successfully found ${fullResult.items.length} NFTs matching "${parsed.q}". The search results are now displayed on your screen in a visual grid.${priceMessage} You can see live price badges appearing on each NFT as the data loads.`
               };
             } else {
               result = {
@@ -148,6 +172,10 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
           }
           break;
 
+        case "get_price_summary":
+          result = await postJSON("/api/agent-tools/price-summary", parsed);
+          break;
+
         default:
           result = { error: `Unknown tool: ${call.name}` };
       }
@@ -180,7 +208,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         dataChannelRef.current.send(JSON.stringify(errorResult));
       }
     }
-  }, [connected, wallet, postJSON, onSearchResults]);
+  }, [connected, wallet, postJSON, onSearchResults, listingsData]);
 
   // Handle data channel messages
   const handleDataChannelMessage = useCallback(async (event: MessageEvent) => {
