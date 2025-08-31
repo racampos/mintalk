@@ -280,7 +280,9 @@ export default function Home() {
           className="grid gap-8" 
           style={{ 
             display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
+            maxWidth: '1200px',
+            margin: '0 auto',
             gap: '2rem' 
           }}
         >
