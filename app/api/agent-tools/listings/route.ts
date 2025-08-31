@@ -31,6 +31,13 @@ export async function POST(req: NextRequest) {
           message: "No listings found for this NFT"
         });
       }
+      if (response.status === 400) {
+        return NextResponse.json({
+          listings: [],
+          error: `Invalid mint address: "${mint}". Please use the full Solana mint address (base58 string), not the NFT name or display ID.`,
+          message: "Invalid mint address format"
+        });
+      }
       throw new Error(`Magic Eden API error: ${response.status}`);
     }
 

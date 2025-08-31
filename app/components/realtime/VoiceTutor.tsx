@@ -92,13 +92,19 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
                 query: parsed.q
               });
               
-              // Optimize result for AI - focus on screen display rather than enumeration
+              // Optimize result for AI - include sample NFTs with mint addresses for reference
               result = {
                 success: true,
                 total: fullResult.items.length,
                 query: parsed.q,
                 ui_updated: true,
-                message: `Successfully found ${fullResult.items.length} NFTs matching "${parsed.q}". The search results are now displayed on your screen in a visual grid. You can see each NFT with its image, name, and collection details. Please refer the user to look at their screen to browse the results.`
+                sample_nfts: fullResult.items.slice(0, 5).map((item: any) => ({
+                  name: item.name,
+                  mint_address: item.id,
+                  collection: item.collection,
+                  compressed: item.compressed
+                })),
+                message: `Successfully found ${fullResult.items.length} NFTs matching "${parsed.q}". The search results are now displayed on your screen in a visual grid. I have the mint addresses for the NFTs if you need to check prices or get more details about any specific NFT.`
               };
             } else {
               result = {
@@ -174,7 +180,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         dataChannelRef.current.send(JSON.stringify(errorResult));
       }
     }
-  }, [connected, wallet, postJSON]);
+  }, [connected, wallet, postJSON, onSearchResults]);
 
   // Handle data channel messages
   const handleDataChannelMessage = useCallback(async (event: MessageEvent) => {
@@ -530,10 +536,11 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
 
   // Component cleanup on unmount - no dependencies to prevent premature execution
   useEffect(() => {
+    const currentComponentId = componentId.current;
     return () => {
       // If component unmounts while connected, notify parent of disconnection
       if (isConnectedRef.current) {
-        console.log(`🔄 VoiceTutor [${componentId.current}] Unmounting while connected - notifying parent`);
+        console.log(`🔄 VoiceTutor [${currentComponentId}] Unmounting while connected - notifying parent`);
         onConnectionStatusChangeRef.current('disconnected');
       }
       

@@ -37,7 +37,9 @@ export async function GET(req: NextRequest) {
           "Your role is to help users discover, understand, and trade Solana NFTs safely. " +
           "Always explain concepts in simple terms, ask for confirmation before any blockchain transactions, " +
           "and guide users through each step. You have access to tools to search NFTs, check listings, " +
-          "and help prepare buy/sell transactions. Be encouraging and educational.",
+          "and help prepare buy/sell transactions. Be encouraging and educational. " +
+          "IMPORTANT: When checking listings or trading NFTs, always use the mint_address (not the name) from search results. " +
+          "Mint addresses are long base58 strings like 'A7xKXtQ...', not short names like 'NFT #1234'.",
         tools: [
           {
             type: "function",
@@ -69,13 +71,13 @@ export async function GET(req: NextRequest) {
           {
             type: "function",
             name: "get_listings",
-            description: "Fetch marketplace listings for a specific NFT by its mint address",
+            description: "Fetch marketplace listings for a specific NFT by its mint address (use mint_address from search results, not the NFT name)",
             parameters: {
               type: "object",
               properties: { 
                 mint: { 
                   type: "string",
-                  description: "The mint address of the NFT"
+                  description: "The full Solana mint address (base58 string) from search results - NOT the NFT display name"
                 } 
               },
               required: ["mint"],
