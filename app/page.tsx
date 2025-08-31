@@ -34,6 +34,15 @@ export default function Home() {
     }
   }, []);
 
+  // Handle search results from voice tutor
+  const handleVoiceSearchResults = useCallback((results: { items: UiAsset[], query: string }) => {
+    console.log(`🎙️ Voice search results received:`, { count: results.items.length, query: results.query });
+    setItems(results.items);
+    setQ(results.query); // Update search box to show what was searched
+    setError(null);
+    setLoading(false);
+  }, []);
+
   // Handle voice session button click
   const handleVoiceSessionToggle = useCallback(() => {
     console.log(`🔘 Button clicked - current connectionStatus: ${connectionStatus}`);
@@ -450,6 +459,7 @@ export default function Home() {
           isActive={voiceSessionActive} 
           onSessionEnd={() => setVoiceSessionActive(false)}
           onConnectionStatusChange={handleConnectionStatusChange}
+          onSearchResults={handleVoiceSearchResults}
         />
       )}
     </main>

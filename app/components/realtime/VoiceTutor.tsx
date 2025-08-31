@@ -18,9 +18,10 @@ interface VoiceTutorProps {
   isActive: boolean;
   onSessionEnd: () => void;
   onConnectionStatusChange: (status: 'connecting' | 'connected' | 'disconnected') => void;
+  onSearchResults: (results: { items: any[], query: string }) => void;
 }
 
-export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange }: VoiceTutorProps) {
+export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults }: VoiceTutorProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -83,20 +84,21 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
             const fullResult = await searchResponse.json();
             console.log(`🎯 Search result:`, fullResult);
             
-            // Optimize result for AI - send a summary instead of full data
+            // Update UI with full results (voice-first integration)
             if (fullResult.items && Array.isArray(fullResult.items)) {
+              console.log(`🎙️ Updating UI with voice search results for query: "${parsed.q}"`);
+              onSearchResults({
+                items: fullResult.items,
+                query: parsed.q
+              });
+              
+              // Optimize result for AI - focus on screen display rather than enumeration
               result = {
                 success: true,
                 total: fullResult.items.length,
                 query: parsed.q,
-                items: fullResult.items.slice(0, 10).map((item: any) => ({
-                  id: item.id,
-                  name: item.name,
-                  collection: item.collection,
-                  compressed: item.compressed,
-                  image_available: !!item.image
-                })),
-                message: `Found ${fullResult.items.length} NFTs matching "${parsed.q}". Showing first 10 results.`
+                ui_updated: true,
+                message: `Successfully found ${fullResult.items.length} NFTs matching "${parsed.q}". The search results are now displayed on your screen in a visual grid. You can see each NFT with its image, name, and collection details. Please refer the user to look at their screen to browse the results.`
               };
             } else {
               result = {
