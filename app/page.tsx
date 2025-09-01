@@ -59,6 +59,7 @@ export default function Home() {
   const [voiceSessionActive, setVoiceSessionActive] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
+  const [voiceAction, setVoiceAction] = useState<string>('');
   // Track listing data for each NFT by mint address
   const [listingsData, setListingsData] = useState<Record<string, ListingData>>({});
 
@@ -74,12 +75,15 @@ export default function Home() {
       setVoiceSessionActive(false);
       console.log(`🎭 Voice State: idle (session disconnected)`);
       setVoiceState('idle');
+      setVoiceAction('');
     } else if (status === 'connecting') {
       console.log(`🎭 Voice State: thinking (connecting to voice service)`);
       setVoiceState('thinking');
+      setVoiceAction('Connecting to voice service...');
     } else if (status === 'connected') {
       console.log(`🎭 Voice State: listening (voice session ready)`);
       setVoiceState('listening');
+      setVoiceAction('');
     }
   }, []);
 
@@ -205,7 +209,7 @@ export default function Home() {
           </div>
 
           {/* Dynamic Hero Circle - shows voice states */}
-          <VoiceHeroCircle voiceState={voiceState} />
+          <VoiceHeroCircle voiceState={voiceState} actionText={voiceAction} />
           <h1 className="text-6xl font-bold mb-6 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
             <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
               Solana NFT
@@ -531,9 +535,10 @@ export default function Home() {
           onConnectionStatusChange={handleConnectionStatusChange}
           onSearchResults={handleVoiceSearchResults}
           onVoiceStateChange={setVoiceState}
+          onActionChange={setVoiceAction}
           listingsData={listingsData}
           walletConnected={isConnected}
-          walletAccounts={accounts}
+          walletAccounts={accounts || undefined}
         />
       )}
     </main>

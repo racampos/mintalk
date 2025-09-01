@@ -6,10 +6,11 @@ export type VoiceState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'proce
 
 interface VoiceHeroCircleProps {
   voiceState: VoiceState;
+  actionText?: string;
   className?: string;
 }
 
-export const VoiceHeroCircle: React.FC<VoiceHeroCircleProps> = ({ voiceState, className = '' }) => {
+export const VoiceHeroCircle: React.FC<VoiceHeroCircleProps> = ({ voiceState, actionText = '', className = '' }) => {
   const getStateConfig = (state: VoiceState) => {
     switch (state) {
       case 'listening':
@@ -84,39 +85,57 @@ export const VoiceHeroCircle: React.FC<VoiceHeroCircleProps> = ({ voiceState, cl
   const config = getStateConfig(voiceState);
 
   return (
-    <div className={`inline-block mb-6 relative ${className}`}>
-      {/* Outer Glow Ring - Only for active states */}
-      {voiceState !== 'idle' && (
-        <div 
-          className={`absolute inset-0 p-4 glass-effect rounded-full bg-gradient-to-r ${config.glowColor} ${config.animation}`}
-          style={{ 
-            transform: 'scale(1.2)',
-            filter: 'blur(8px)',
-            opacity: 0.6
-          }}
-        />
-      )}
-      
-      {/* Main Circle */}
-      <div className={`p-4 glass-effect rounded-full ${config.animation} transition-all duration-500 ease-in-out`}>
-        {config.icon}
+    <div className={`flex flex-col items-center mb-6 ${className}`}>
+      {/* Hero Circle Container - Fixed size to maintain circle shape */}
+      <div className="relative w-20 h-20 flex items-center justify-center">
+        {/* Outer Glow Ring - Only for active states */}
+        {voiceState !== 'idle' && (
+          <div 
+            className={`absolute inset-0 p-4 glass-effect rounded-full bg-gradient-to-r ${config.glowColor} ${config.animation}`}
+            style={{ 
+              transform: 'scale(1.2)',
+              filter: 'blur(8px)',
+              opacity: 0.6
+            }}
+          />
+        )}
+        
+        {/* Main Circle - Fixed size */}
+        <div className={`w-20 h-20 flex items-center justify-center glass-effect rounded-full ${config.animation} transition-all duration-500 ease-in-out`}>
+          {config.icon}
+        </div>
+        
+        {/* Additional animated elements for special states */}
+        {voiceState === 'listening' && (
+          <>
+            <div className="absolute inset-0 rounded-full border-2 border-blue-400/40 animate-ping" />
+            <div className="absolute inset-0 rounded-full border border-blue-300/20 animate-pulse" />
+          </>
+        )}
+        
+        {voiceState === 'speaking' && (
+          <>
+            <div className="absolute inset-0 rounded-full border-2 border-green-400/40 animate-pulse" />
+            <div className="absolute inset-0 rounded-full border border-green-300/20" 
+                 style={{ animation: 'wave-ring 1s ease-in-out infinite' }} />
+          </>
+        )}
       </div>
       
-      {/* Additional animated elements for special states */}
-      {voiceState === 'listening' && (
-        <>
-          <div className="absolute inset-0 rounded-full border-2 border-blue-400/40 animate-ping" />
-          <div className="absolute inset-0 rounded-full border border-blue-300/20 animate-pulse" />
-        </>
-      )}
-      
-      {voiceState === 'speaking' && (
-        <>
-          <div className="absolute inset-0 rounded-full border-2 border-green-400/40 animate-pulse" />
-          <div className="absolute inset-0 rounded-full border border-green-300/20" 
-               style={{ animation: 'wave-ring 1s ease-in-out infinite' }} />
-        </>
-      )}
+      {/* Action Text Display - Always reserve space for smooth transitions */}
+      <div className="mt-4 text-center h-8 flex items-center justify-center">
+        <div 
+          className={`inline-block px-4 py-2 glass-light rounded-full transition-all duration-300 ease-in-out ${
+            actionText 
+              ? 'opacity-100 transform translate-y-0 scale-100' 
+              : 'opacity-0 transform translate-y-2 scale-95'
+          }`}
+        >
+          <span className="text-white/90 text-sm font-medium">
+            {actionText || '\u00A0'} {/* Non-breaking space to maintain height */}
+          </span>
+        </div>
+      </div>
     </div>
   );
 };

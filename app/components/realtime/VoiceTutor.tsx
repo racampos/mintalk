@@ -21,12 +21,13 @@ interface VoiceTutorProps {
   onConnectionStatusChange: (status: 'connecting' | 'connected' | 'disconnected') => void;
   onSearchResults: (results: { items: any[], query: string, searchNote?: string }) => void;
   onVoiceStateChange: (state: 'idle' | 'listening' | 'thinking' | 'speaking' | 'processing') => void;
+  onActionChange: (action: string) => void;
   listingsData?: Record<string, any>;
   walletConnected?: boolean;
   walletAccounts?: string[];
 }
 
-export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults, onVoiceStateChange, listingsData = {}, walletConnected, walletAccounts }: VoiceTutorProps) {
+export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults, onVoiceStateChange, onActionChange, listingsData = {}, walletConnected, walletAccounts }: VoiceTutorProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -62,9 +63,35 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
     return response.json();
   }, []);
 
+  // Get action text for tool execution
+  const getActionText = (toolName: string): string => {
+    switch (toolName) {
+      case 'search_nfts':
+        return 'Searching for NFTs...';
+      case 'get_listings':
+        return 'Finding available listings...';
+      case 'buy_nft':
+        return 'Preparing NFT purchase...';
+      case 'sell_nft':
+        return 'Preparing NFT sale...';
+      case 'request_wallet_signature':
+        return 'Signing transaction...';
+      case 'get_price_summary':
+        return 'Getting price information...';
+      case 'get_wallet_info':
+        return 'Checking wallet status...';
+      default:
+        return 'Processing...';
+    }
+  };
+
   // Tool execution handler
   const executeToolCall = useCallback(async (call: PendingCall) => {
     console.log(`🔧 Executing tool: ${call.name}`, call.args);
+    
+    // Set action text for this tool
+    const actionText = getActionText(call.name);
+    onActionChange(actionText);
     
     try {
       const parsed = JSON.parse(call.args || "{}");
@@ -312,7 +339,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         dataChannelRef.current.send(JSON.stringify(errorResult));
       }
     }
-  }, [walletConnected, walletAccounts, signAndSendTransaction, postJSON, onSearchResults, listingsData]);
+  }, [walletConnected, walletAccounts, signAndSendTransaction, postJSON, onSearchResults, onActionChange, listingsData]);
 
   // Handle data channel messages
   const handleDataChannelMessage = useCallback(async (event: MessageEvent) => {
@@ -363,6 +390,8 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
             // Back to listening state after tool completes, then speaking will take over when AI responds
             console.log(`🎭 Voice State: listening (tool completed, ready for AI response)`);
             onVoiceStateChange('listening');
+            // Clear action text when tool completes
+            onActionChange('');
           }
           break;
 
@@ -417,7 +446,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
     } catch (error) {
       console.error("Error handling data channel message:", error);
     }
-  }, [executeToolCall, onVoiceStateChange]);
+  }, [executeToolCall, onVoiceStateChange, onActionChange]);
 
   // Connect to OpenAI Realtime API
   const connect = useCallback(async () => {
