@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import VoiceTutor from "./components/realtime/VoiceTutor";
+import { VoiceHeroCircle, VoiceState } from "./components/realtime/VoiceHeroCircle";
 import { useWeb3AuthConnect, useWeb3AuthDisconnect } from "@web3auth/modal/react";
 import { useSolanaWallet } from "@web3auth/modal/react/solana";
 import PriceBadge, { ListingData } from "./components/PriceBadge";
@@ -57,6 +58,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [voiceSessionActive, setVoiceSessionActive] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
+  const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   // Track listing data for each NFT by mint address
   const [listingsData, setListingsData] = useState<Record<string, ListingData>>({});
 
@@ -70,6 +72,14 @@ export default function Home() {
     setConnectionStatus(status);
     if (status === 'disconnected') {
       setVoiceSessionActive(false);
+      console.log(`🎭 Voice State: idle (session disconnected)`);
+      setVoiceState('idle');
+    } else if (status === 'connecting') {
+      console.log(`🎭 Voice State: thinking (connecting to voice service)`);
+      setVoiceState('thinking');
+    } else if (status === 'connected') {
+      console.log(`🎭 Voice State: listening (voice session ready)`);
+      setVoiceState('listening');
     }
   }, []);
 
@@ -194,11 +204,8 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="inline-block mb-6 p-4 glass-effect rounded-full animate-glow">
-            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
+          {/* Dynamic Hero Circle - shows voice states */}
+          <VoiceHeroCircle voiceState={voiceState} />
           <h1 className="text-6xl font-bold mb-6 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
             <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
               Solana NFT
@@ -523,6 +530,7 @@ export default function Home() {
           onSessionEnd={() => setVoiceSessionActive(false)}
           onConnectionStatusChange={handleConnectionStatusChange}
           onSearchResults={handleVoiceSearchResults}
+          onVoiceStateChange={setVoiceState}
           listingsData={listingsData}
           walletConnected={isConnected}
           walletAccounts={accounts}

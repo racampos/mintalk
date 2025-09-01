@@ -20,12 +20,13 @@ interface VoiceTutorProps {
   onSessionEnd: () => void;
   onConnectionStatusChange: (status: 'connecting' | 'connected' | 'disconnected') => void;
   onSearchResults: (results: { items: any[], query: string, searchNote?: string }) => void;
+  onVoiceStateChange: (state: 'idle' | 'listening' | 'thinking' | 'speaking' | 'processing') => void;
   listingsData?: Record<string, any>;
   walletConnected?: boolean;
   walletAccounts?: string[];
 }
 
-export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults, listingsData = {}, walletConnected, walletAccounts }: VoiceTutorProps) {
+export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults, onVoiceStateChange, listingsData = {}, walletConnected, walletAccounts }: VoiceTutorProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -342,6 +343,9 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
           }
           existingCall.args += message.delta || "";
           pendingCallsRef.current.set(message.call_id, existingCall);
+          // Set processing state when function calls are happening
+          console.log(`🎭 Voice State: processing (tool execution)`);
+          onVoiceStateChange('processing');
           break;
 
         case "response.function_call_arguments.done":
@@ -356,6 +360,9 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
             console.log(`🚀 Executing completed call:`, completedCall);
             await executeToolCall(completedCall);
             pendingCallsRef.current.delete(message.call_id);
+            // Back to listening state after tool completes, then speaking will take over when AI responds
+            console.log(`🎭 Voice State: listening (tool completed, ready for AI response)`);
+            onVoiceStateChange('listening');
           }
           break;
 
@@ -370,11 +377,17 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
             }
             return newTranscript;
           });
+          // Set speaking state when AI is generating text responses (PRIORITY STATE)
+          console.log(`🎭 Voice State: speaking (AI generating response)`);
+          onVoiceStateChange('speaking');
           break;
 
         case "response.text.done":
           // Add a new line for the next response
           setTranscript(prev => [...prev, ""]);
+          // Back to listening when AI finishes speaking
+          console.log(`🎭 Voice State: listening (AI finished speaking, ready for user)`);
+          onVoiceStateChange('listening');
           break;
 
         case "conversation.item.created":
@@ -404,7 +417,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
     } catch (error) {
       console.error("Error handling data channel message:", error);
     }
-  }, [executeToolCall]);
+  }, [executeToolCall, onVoiceStateChange]);
 
   // Connect to OpenAI Realtime API
   const connect = useCallback(async () => {
