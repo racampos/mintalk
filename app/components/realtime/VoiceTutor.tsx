@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useWeb3AuthConnect } from '@web3auth/modal/react';
 import { useSolanaWallet, useSignAndSendTransaction } from '@web3auth/modal/react/solana';
-import { VersionedTransaction } from '@solana/web3.js';
+import { Transaction, VersionedTransaction } from '@solana/web3.js';
 
 // Global connection guard to prevent multiple instances
 let globalConnectionAttempt = false;
@@ -164,34 +164,71 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
           result = await postJSON("/api/agent-tools/sell", parsed);
           break;
 
-        case "request_wallet_signature":
+                case "request_wallet_signature":
           if (!walletConnected || !walletAccounts || walletAccounts.length === 0) {
             result = { error: "Wallet not connected. Please login with your social account first." };
           } else {
             // Validate transaction data
             if (!parsed.txBase64 || parsed.txBase64.trim() === "") {
-              result = { 
-                error: "No transaction data provided. The buy transaction may have failed to prepare properly." 
+              result = {
+                error: "No transaction data provided. The buy transaction may have failed to prepare properly."
               };
             } else {
               try {
-                // Decode the base64 transaction
+                console.log('🔐 Attempting to sign transaction with Web3Auth...');
+                
+                // Auto-detect and deserialize the correct transaction type
                 const txBuffer = Buffer.from(parsed.txBase64, 'base64');
-                const transaction = VersionedTransaction.deserialize(txBuffer);
+                const bytes = new Uint8Array(txBuffer);
                 
-                // Sign and send the transaction using Web3Auth
-                await signAndSendTransaction(transaction);
+                // Try different deserialization methods for Solana transactions
+                let transaction;
+                let txType;
                 
-                // Wait for the transaction signature result
-                if (transactionSignature) {
-                  result = { signature: transactionSignature };
-                } else if (txError) {
-                  result = { error: txError.message };
-                } else {
-                  result = { error: "Transaction signing failed" };
+                try {
+                  // First, check if it's a versioned transaction (MSB set = versioned)
+                  const isVersioned = (bytes[0] & 0x80) !== 0;
+                  
+                  if (isVersioned) {
+                    // Try VersionedTransaction.deserialize first
+                    try {
+                      transaction = VersionedTransaction.deserialize(bytes);
+                      txType = "VersionedTransaction";
+                    } catch (versionedError) {
+                      const errorMsg = versionedError instanceof Error ? versionedError.message : String(versionedError);
+                      console.log(`VersionedTransaction.deserialize failed, trying legacy Transaction.from:`, errorMsg);
+                      // Fallback to legacy if versioned fails
+                      transaction = Transaction.from(bytes);
+                      txType = "Transaction (legacy fallback)";
+                    }
+                  } else {
+                    // Try legacy transaction first
+                    try {
+                      transaction = Transaction.from(bytes);
+                      txType = "Transaction (legacy)";
+                    } catch (legacyError) {
+                      const errorMsg = legacyError instanceof Error ? legacyError.message : String(legacyError);
+                      console.log(`Transaction.from failed, trying VersionedTransaction:`, errorMsg);
+                      // Fallback to versioned if legacy fails
+                      transaction = VersionedTransaction.deserialize(bytes);
+                      txType = "VersionedTransaction (fallback)";
+                    }
+                  }
+                  
+                  console.log(`📝 Transaction deserialized successfully as ${txType}, calling signAndSendTransaction...`);
+                } catch (deserializeError) {
+                  const errorMsg = deserializeError instanceof Error ? deserializeError.message : String(deserializeError);
+                  throw new Error(`Failed to deserialize transaction: ${errorMsg}. First few bytes: [${Array.from(bytes.slice(0, 10)).join(', ')}]`);
                 }
+                
+                // Sign and send the transaction using Web3Auth (this returns a promise)
+                const signature = await signAndSendTransaction(transaction);
+                
+                console.log('✅ Transaction signed and sent! Signature:', signature);
+                result = { signature: signature.toString() };
+                
               } catch (error) {
-                console.error('Error signing transaction:', error);
+                console.error('❌ Error signing transaction:', error);
                 result = { 
                   error: error instanceof Error ? error.message : 'Unknown error signing transaction' 
                 };
@@ -259,7 +296,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         dataChannelRef.current.send(JSON.stringify(errorResult));
       }
     }
-  }, [walletConnected, walletAccounts, signAndSendTransaction, transactionSignature, txError, postJSON, onSearchResults, listingsData]);
+  }, [walletConnected, walletAccounts, signAndSendTransaction, postJSON, onSearchResults, listingsData]);
 
   // Handle data channel messages
   const handleDataChannelMessage = useCallback(async (event: MessageEvent) => {

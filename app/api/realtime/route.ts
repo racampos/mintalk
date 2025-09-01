@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
           "and execute complete buy/sell transactions. Be encouraging and educational. " +
           "IMPORTANT: When checking listings or trading NFTs, always use the mint_address (not the name) from search results. " +
           "Mint addresses are long base58 strings like 'A7xKXtQ...', not short names like 'NFT #1234'. " +
-          "For buy_nft: use mint=tokenMint, listingId=id, seller=seller, price=price from get_listings response.",
+          "For buy_nft: use mint=tokenMint, listingId=id, seller=sellerAddress, price=price from get_listings response. IMPORTANT: Use sellerAddress (full address), not seller (truncated display version).",
         tools: [
           {
             type: "function",
@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
                 },
                 seller: { 
                   type: "string",
-                  description: "The seller's wallet address (seller from listings)"
+                  description: "The seller's full wallet address (use sellerAddress from price summary, or seller from get_listings - must be full base58 address, not truncated)"
                 },
                 price: { 
                   type: "number",

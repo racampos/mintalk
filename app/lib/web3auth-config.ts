@@ -8,16 +8,11 @@ if (!clientId) {
   throw new Error("NEXT_PUBLIC_WEB3AUTH_CLIENT_ID is required");
 }
 
-// Web3Auth configuration for Solana devnet (matching project network)
+// Web3Auth configuration for Solana mainnet (matching Alchemy endpoint)
 const web3AuthContextConfig: Web3AuthContextConfig = {
   web3AuthOptions: {
     clientId,
     web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
-    chainConfig: {
-      chainNamespace: "solana",
-      chainId: "0x2", // Solana devnet
-      rpcTarget: "https://api.devnet.solana.com",
-    }
   }
 };
 

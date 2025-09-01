@@ -84,7 +84,8 @@ export async function POST(req: NextRequest) {
       listings: listedNFTs.map(l => ({
         mint: l.mint,
         price: l.price,
-        seller: l.seller?.substring(0, 8) + '...',
+        seller: l.seller?.substring(0, 8) + '...',  // Display version (truncated)
+        sellerAddress: l.seller,  // Full address for transactions
         listingId: l.listingId
       }))
     };

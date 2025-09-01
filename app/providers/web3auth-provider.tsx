@@ -50,7 +50,7 @@ export async function signAndSendTxWithWallet(
 // Helper function to get connection for the specified cluster - maintains same interface
 export function getConnection(cluster: 'mainnet' | 'devnet' = 'mainnet'): Connection {
   const endpoint = cluster === 'mainnet' 
-    ? `https://rpc.helius.xyz/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
+    ? `https://solana-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY || "UPGDL2kgcUNTaCzjcim35"}`
     : 'https://api.devnet.solana.com';
   
   return new Connection(endpoint, 'confirmed');
