@@ -268,3 +268,43 @@
 .animate-wave-3 { animation: wave-3 0.8s ease-in-out infinite 0.2s; }
 .animate-wave-4 { animation: wave-4 0.8s ease-in-out infinite 0.3s; }
 .animate-wave-5 { animation: wave-5 0.8s ease-in-out infinite 0.4s; }
+
+/* Confetti Celebration Animation */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Triangle shape for confetti pieces */
+.triangle {
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+.triangle:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-style: solid;
+  border-width: 0 6px 10px 6px;
+  border-color: transparent transparent currentColor transparent;
+}
+
+/* Confetti animation utility class */
+.animate-confetti-fall {
+  animation: confetti-fall linear forwards;
+}

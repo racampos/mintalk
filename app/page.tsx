@@ -7,6 +7,7 @@ import { useWeb3AuthConnect, useWeb3AuthDisconnect } from "@web3auth/modal/react
 import { useSolanaWallet } from "@web3auth/modal/react/solana";
 import PriceBadge, { ListingData } from "./components/PriceBadge";
 import listingQueue from "./services/listingQueue";
+import Confetti from "./components/ui/Confetti";
 
 type UiAsset = {
   id: string;
@@ -60,6 +61,7 @@ export default function Home() {
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const [voiceAction, setVoiceAction] = useState<string>('');
+  const [showConfetti, setShowConfetti] = useState(false);
   // Track listing data for each NFT by mint address
   const [listingsData, setListingsData] = useState<Record<string, ListingData>>({});
 
@@ -102,6 +104,15 @@ export default function Home() {
   // Handle listing data updates from PriceBadges
   const handleListingData = useCallback((mint: string, data: ListingData) => {
     setListingsData(prev => ({ ...prev, [mint]: data }));
+  }, []);
+
+  // Handle confetti celebration trigger
+  const triggerConfetti = useCallback(() => {
+    setShowConfetti(true);
+  }, []);
+
+  const handleConfettiComplete = useCallback(() => {
+    setShowConfetti(false);
   }, []);
 
   // Handle voice session button click
@@ -536,11 +547,15 @@ export default function Home() {
           onSearchResults={handleVoiceSearchResults}
           onVoiceStateChange={setVoiceState}
           onActionChange={setVoiceAction}
+          onConfettiTrigger={triggerConfetti}
           listingsData={listingsData}
           walletConnected={isConnected}
           walletAccounts={accounts || undefined}
         />
       )}
+
+      {/* Confetti celebration */}
+      <Confetti show={showConfetti} onComplete={handleConfettiComplete} />
     </main>
   );
 }

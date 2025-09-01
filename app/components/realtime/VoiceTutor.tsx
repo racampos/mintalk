@@ -22,12 +22,13 @@ interface VoiceTutorProps {
   onSearchResults: (results: { items: any[], query: string, searchNote?: string }) => void;
   onVoiceStateChange: (state: 'idle' | 'listening' | 'thinking' | 'speaking' | 'processing') => void;
   onActionChange: (action: string) => void;
+  onConfettiTrigger?: () => void;
   listingsData?: Record<string, any>;
   walletConnected?: boolean;
   walletAccounts?: string[];
 }
 
-export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults, onVoiceStateChange, onActionChange, listingsData = {}, walletConnected, walletAccounts }: VoiceTutorProps) {
+export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults, onVoiceStateChange, onActionChange, onConfettiTrigger, listingsData = {}, walletConnected, walletAccounts }: VoiceTutorProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -75,7 +76,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
       case 'sell_nft':
         return 'Preparing NFT sale...';
       case 'request_wallet_signature':
-        return 'Signing transaction...';
+        return 'Executing transaction on blockchain...';
       case 'get_price_summary':
         return 'Getting price information...';
       case 'get_wallet_info':
@@ -210,11 +211,17 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
                 console.log('📝 Transaction would be signed and sent in production mode');
                 console.log('💰 MOCK: No real SOL will be spent in this mode');
                 
+                // Add realistic delay to simulate blockchain execution time (1.5 seconds)
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
                 // Generate a realistic-looking fake signature for testing
                 const fakeSignature = `MOCK_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}ABCD${Date.now().toString(36)}`;
                 console.log('✅ MOCK: Transaction "signed and sent"! Fake Signature:', fakeSignature);
                 
                 result = { signature: fakeSignature };
+                
+                // Trigger confetti celebration for successful NFT purchase! 🎉
+                onConfettiTrigger?.();
               } else {
                 try {
                   console.log('🔐 Attempting to sign transaction with Web3Auth...');
@@ -268,6 +275,9 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
                   
                   console.log('✅ Transaction signed and sent! Signature:', signature);
                   result = { signature: signature.toString() };
+                  
+                  // Trigger confetti celebration for successful NFT purchase! 🎉
+                  onConfettiTrigger?.();
                   
                 } catch (error) {
                   console.error('❌ Error signing transaction:', error);
@@ -339,7 +349,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         dataChannelRef.current.send(JSON.stringify(errorResult));
       }
     }
-  }, [walletConnected, walletAccounts, signAndSendTransaction, postJSON, onSearchResults, onActionChange, listingsData]);
+  }, [walletConnected, walletAccounts, signAndSendTransaction, postJSON, onSearchResults, onActionChange, onConfettiTrigger, listingsData]);
 
   // Handle data channel messages
   const handleDataChannelMessage = useCallback(async (event: MessageEvent) => {
