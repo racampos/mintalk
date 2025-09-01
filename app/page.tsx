@@ -62,6 +62,7 @@ export default function Home() {
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const [voiceAction, setVoiceAction] = useState<string>('');
   const [showConfetti, setShowConfetti] = useState(false);
+  const [transactionSignature, setTransactionSignature] = useState<string | null>(null);
   // Track listing data for each NFT by mint address
   const [listingsData, setListingsData] = useState<Record<string, ListingData>>({});
 
@@ -113,7 +114,26 @@ export default function Home() {
 
   const handleConfettiComplete = useCallback(() => {
     setShowConfetti(false);
+    // Keep transaction signature visible after confetti ends
   }, []);
+
+  const handleTransactionComplete = useCallback((signature: string) => {
+    setTransactionSignature(signature);
+    // Clear any previous action text when showing transaction link
+    setTimeout(() => {
+      setVoiceAction('');
+    }, 1000); // Give a moment for action text to be seen, then show link
+  }, []);
+
+  // Clear transaction signature when new actions begin
+  const handleActionChange = useCallback((action: string) => {
+    setVoiceAction(action);
+    // Clear transaction signature when new action starts so action text can display
+    if (action) {
+      console.log('🔄 New action detected, clearing transaction signature:', action);
+      setTransactionSignature(null);
+    }
+  }, []); // No dependencies to avoid stale closures
 
   // Handle voice session button click
   const handleVoiceSessionToggle = useCallback(() => {
@@ -126,9 +146,13 @@ export default function Home() {
     if (connectionStatus === 'connected') {
       console.log(`🔘 Ending voice session`);
       setVoiceSessionActive(false);
+      // Clear transaction signature when ending session
+      setTransactionSignature(null);
     } else {
       console.log(`🔘 Starting voice session`);
       setVoiceSessionActive(true);
+      // Clear any previous transaction signature when starting new session
+      setTransactionSignature(null);
     }
   }, [connectionStatus]);
 
@@ -220,7 +244,7 @@ export default function Home() {
           </div>
 
           {/* Dynamic Hero Circle - shows voice states */}
-          <VoiceHeroCircle voiceState={voiceState} actionText={voiceAction} />
+          <VoiceHeroCircle voiceState={voiceState} actionText={voiceAction} transactionSignature={transactionSignature} />
           <h1 className="text-6xl font-bold mb-6 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
             <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
               Solana NFT
@@ -546,8 +570,9 @@ export default function Home() {
           onConnectionStatusChange={handleConnectionStatusChange}
           onSearchResults={handleVoiceSearchResults}
           onVoiceStateChange={setVoiceState}
-          onActionChange={setVoiceAction}
+          onActionChange={handleActionChange}
           onConfettiTrigger={triggerConfetti}
+          onTransactionComplete={handleTransactionComplete}
           listingsData={listingsData}
           walletConnected={isConnected}
           walletAccounts={accounts || undefined}

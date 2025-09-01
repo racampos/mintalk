@@ -23,12 +23,13 @@ interface VoiceTutorProps {
   onVoiceStateChange: (state: 'idle' | 'listening' | 'thinking' | 'speaking' | 'processing') => void;
   onActionChange: (action: string) => void;
   onConfettiTrigger?: () => void;
+  onTransactionComplete?: (signature: string) => void;
   listingsData?: Record<string, any>;
   walletConnected?: boolean;
   walletAccounts?: string[];
 }
 
-export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults, onVoiceStateChange, onActionChange, onConfettiTrigger, listingsData = {}, walletConnected, walletAccounts }: VoiceTutorProps) {
+export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults, onVoiceStateChange, onActionChange, onConfettiTrigger, onTransactionComplete, listingsData = {}, walletConnected, walletAccounts }: VoiceTutorProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -222,6 +223,9 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
                 
                 // Trigger confetti celebration for successful NFT purchase! 🎉
                 onConfettiTrigger?.();
+                
+                // Pass transaction signature for Solscan link
+                onTransactionComplete?.(fakeSignature);
               } else {
                 try {
                   console.log('🔐 Attempting to sign transaction with Web3Auth...');
@@ -278,6 +282,9 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
                   
                   // Trigger confetti celebration for successful NFT purchase! 🎉
                   onConfettiTrigger?.();
+                  
+                  // Pass transaction signature for Solscan link
+                  onTransactionComplete?.(signature.toString());
                   
                 } catch (error) {
                   console.error('❌ Error signing transaction:', error);
@@ -349,7 +356,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         dataChannelRef.current.send(JSON.stringify(errorResult));
       }
     }
-  }, [walletConnected, walletAccounts, signAndSendTransaction, postJSON, onSearchResults, onActionChange, onConfettiTrigger, listingsData]);
+  }, [walletConnected, walletAccounts, signAndSendTransaction, postJSON, onSearchResults, onActionChange, onConfettiTrigger, onTransactionComplete, listingsData]);
 
   // Handle data channel messages
   const handleDataChannelMessage = useCallback(async (event: MessageEvent) => {

@@ -7,10 +7,11 @@ export type VoiceState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'proce
 interface VoiceHeroCircleProps {
   voiceState: VoiceState;
   actionText?: string;
+  transactionSignature?: string | null;
   className?: string;
 }
 
-export const VoiceHeroCircle: React.FC<VoiceHeroCircleProps> = ({ voiceState, actionText = '', className = '' }) => {
+export const VoiceHeroCircle: React.FC<VoiceHeroCircleProps> = ({ voiceState, actionText = '', transactionSignature, className = '' }) => {
   const getStateConfig = (state: VoiceState) => {
     switch (state) {
       case 'listening':
@@ -122,18 +123,29 @@ export const VoiceHeroCircle: React.FC<VoiceHeroCircleProps> = ({ voiceState, ac
         )}
       </div>
       
-      {/* Action Text Display - Always reserve space for smooth transitions */}
+      {/* Action Text / Transaction Link Display - Always reserve space for smooth transitions */}
       <div className="mt-4 text-center h-8 flex items-center justify-center">
         <div 
           className={`inline-block px-4 py-2 glass-light rounded-full transition-all duration-300 ease-in-out ${
-            actionText 
+            (transactionSignature || actionText)
               ? 'opacity-100 transform translate-y-0 scale-100' 
               : 'opacity-0 transform translate-y-2 scale-95'
           }`}
         >
-          <span className="text-white/90 text-sm font-medium">
-            {actionText || '\u00A0'} {/* Non-breaking space to maintain height */}
-          </span>
+          {transactionSignature ? (
+            <a 
+              href={`https://solscan.io/tx/${transactionSignature}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cyan-400 hover:text-cyan-300 text-sm font-medium underline decoration-dotted underline-offset-2 transition-colors duration-200"
+            >
+              View on Solscan ↗
+            </a>
+          ) : (
+            <span className="text-white/90 text-sm font-medium">
+              {actionText || '\u00A0'} {/* Non-breaking space to maintain height */}
+            </span>
+          )}
         </div>
       </div>
     </div>
