@@ -174,64 +174,79 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
                 error: "No transaction data provided. The buy transaction may have failed to prepare properly."
               };
             } else {
-              try {
-                console.log('🔐 Attempting to sign transaction with Web3Auth...');
+              // Check if we're in mock mode for testing
+              const isMockMode = process.env.NEXT_PUBLIC_MOCK_TRANSACTIONS === 'true';
+              
+              if (isMockMode) {
+                console.log('🎭 MOCK MODE: Simulating transaction signing without blockchain execution...');
+                console.log('📝 Transaction would be signed and sent in production mode');
+                console.log('💰 MOCK: No real SOL will be spent in this mode');
                 
-                // Auto-detect and deserialize the correct transaction type
-                const txBuffer = Buffer.from(parsed.txBase64, 'base64');
-                const bytes = new Uint8Array(txBuffer);
+                // Generate a realistic-looking fake signature for testing
+                const fakeSignature = `MOCK_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}ABCD${Date.now().toString(36)}`;
+                console.log('✅ MOCK: Transaction "signed and sent"! Fake Signature:', fakeSignature);
                 
-                // Try different deserialization methods for Solana transactions
-                let transaction;
-                let txType;
-                
+                result = { signature: fakeSignature };
+              } else {
                 try {
-                  // First, check if it's a versioned transaction (MSB set = versioned)
-                  const isVersioned = (bytes[0] & 0x80) !== 0;
+                  console.log('🔐 Attempting to sign transaction with Web3Auth...');
                   
-                  if (isVersioned) {
-                    // Try VersionedTransaction.deserialize first
-                    try {
-                      transaction = VersionedTransaction.deserialize(bytes);
-                      txType = "VersionedTransaction";
-                    } catch (versionedError) {
-                      const errorMsg = versionedError instanceof Error ? versionedError.message : String(versionedError);
-                      console.log(`VersionedTransaction.deserialize failed, trying legacy Transaction.from:`, errorMsg);
-                      // Fallback to legacy if versioned fails
-                      transaction = Transaction.from(bytes);
-                      txType = "Transaction (legacy fallback)";
+                  // Auto-detect and deserialize the correct transaction type
+                  const txBuffer = Buffer.from(parsed.txBase64, 'base64');
+                  const bytes = new Uint8Array(txBuffer);
+                  
+                  // Try different deserialization methods for Solana transactions
+                  let transaction;
+                  let txType;
+                  
+                  try {
+                    // First, check if it's a versioned transaction (MSB set = versioned)
+                    const isVersioned = (bytes[0] & 0x80) !== 0;
+                    
+                    if (isVersioned) {
+                      // Try VersionedTransaction.deserialize first
+                      try {
+                        transaction = VersionedTransaction.deserialize(bytes);
+                        txType = "VersionedTransaction";
+                      } catch (versionedError) {
+                        const errorMsg = versionedError instanceof Error ? versionedError.message : String(versionedError);
+                        console.log(`VersionedTransaction.deserialize failed, trying legacy Transaction.from:`, errorMsg);
+                        // Fallback to legacy if versioned fails
+                        transaction = Transaction.from(bytes);
+                        txType = "Transaction (legacy fallback)";
+                      }
+                    } else {
+                      // Try legacy transaction first
+                      try {
+                        transaction = Transaction.from(bytes);
+                        txType = "Transaction (legacy)";
+                      } catch (legacyError) {
+                        const errorMsg = legacyError instanceof Error ? legacyError.message : String(legacyError);
+                        console.log(`Transaction.from failed, trying VersionedTransaction:`, errorMsg);
+                        // Fallback to versioned if legacy fails
+                        transaction = VersionedTransaction.deserialize(bytes);
+                        txType = "VersionedTransaction (fallback)";
+                      }
                     }
-                  } else {
-                    // Try legacy transaction first
-                    try {
-                      transaction = Transaction.from(bytes);
-                      txType = "Transaction (legacy)";
-                    } catch (legacyError) {
-                      const errorMsg = legacyError instanceof Error ? legacyError.message : String(legacyError);
-                      console.log(`Transaction.from failed, trying VersionedTransaction:`, errorMsg);
-                      // Fallback to versioned if legacy fails
-                      transaction = VersionedTransaction.deserialize(bytes);
-                      txType = "VersionedTransaction (fallback)";
-                    }
+                    
+                    console.log(`📝 Transaction deserialized successfully as ${txType}, calling signAndSendTransaction...`);
+                  } catch (deserializeError) {
+                    const errorMsg = deserializeError instanceof Error ? deserializeError.message : String(deserializeError);
+                    throw new Error(`Failed to deserialize transaction: ${errorMsg}. First few bytes: [${Array.from(bytes.slice(0, 10)).join(', ')}]`);
                   }
                   
-                  console.log(`📝 Transaction deserialized successfully as ${txType}, calling signAndSendTransaction...`);
-                } catch (deserializeError) {
-                  const errorMsg = deserializeError instanceof Error ? deserializeError.message : String(deserializeError);
-                  throw new Error(`Failed to deserialize transaction: ${errorMsg}. First few bytes: [${Array.from(bytes.slice(0, 10)).join(', ')}]`);
+                  // Sign and send the transaction using Web3Auth (this returns a promise)
+                  const signature = await signAndSendTransaction(transaction);
+                  
+                  console.log('✅ Transaction signed and sent! Signature:', signature);
+                  result = { signature: signature.toString() };
+                  
+                } catch (error) {
+                  console.error('❌ Error signing transaction:', error);
+                  result = { 
+                    error: error instanceof Error ? error.message : 'Unknown error signing transaction' 
+                  };
                 }
-                
-                // Sign and send the transaction using Web3Auth (this returns a promise)
-                const signature = await signAndSendTransaction(transaction);
-                
-                console.log('✅ Transaction signed and sent! Signature:', signature);
-                result = { signature: signature.toString() };
-                
-              } catch (error) {
-                console.error('❌ Error signing transaction:', error);
-                result = { 
-                  error: error instanceof Error ? error.message : 'Unknown error signing transaction' 
-                };
               }
             }
           }
