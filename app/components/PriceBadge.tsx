@@ -27,17 +27,13 @@ export default function PriceBadge({ mint, onListingData, className = "" }: Pric
     let isCancelled = false;
     
     const checkListing = async () => {
-      console.log(`🎯 [PriceBadge] Starting check for mint ${mint.substring(0, 8)}...`);
-      
       try {
         const data = await listingQueue.checkListing(mint);
-        console.log(`📋 [PriceBadge] Received data for mint ${mint.substring(0, 8)}...:`, data);
 
         if (isCancelled) return;
         
         if (data.listings && data.listings.length > 0) {
           const firstListing = data.listings[0];
-          console.log(`💎 [PriceBadge] Setting LISTED for mint ${mint.substring(0, 8)}... with price ${firstListing.price} SOL`);
           
           const listingData: ListingData = {
             status: 'listed',
@@ -49,8 +45,6 @@ export default function PriceBadge({ mint, onListingData, className = "" }: Pric
           setListing(listingData);
           onListingData?.(mint, listingData);
         } else {
-          console.log(`📭 [PriceBadge] Setting UNLISTED for mint ${mint.substring(0, 8)}... (${data.listings?.length || 0} listings)`);
-          
           const listingData: ListingData = { status: 'unlisted' };
           setListing(listingData);
           onListingData?.(mint, listingData);

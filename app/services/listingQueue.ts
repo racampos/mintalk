@@ -84,7 +84,7 @@ class ListingQueue {
   }
 
   private async fetchListing(mint: string, retries = 0): Promise<any> {
-    console.log(`🔍 [ListingQueue] Fetching listing for mint: ${mint.substring(0, 8)}... (attempt ${retries + 1}/${this.MAX_RETRIES + 1})`);
+
     
     try {
       // Add timeout to prevent hanging requests (increased for heavy queue loads with 50+ NFTs)
@@ -105,7 +105,7 @@ class ListingQueue {
       }
 
       const data = await response.json();
-      console.log(`✅ [ListingQueue] Successfully fetched ${data.listings?.length || 0} listings for mint: ${mint.substring(0, 8)}...`);
+
       return data;
 
     } catch (error) {
