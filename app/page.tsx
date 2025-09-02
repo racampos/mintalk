@@ -8,6 +8,7 @@ import { useSolanaWallet } from "@web3auth/modal/react/solana";
 import PriceBadge, { ListingData } from "./components/PriceBadge";
 import listingQueue from "./services/listingQueue";
 import Confetti from "./components/ui/Confetti";
+import EnhancedWalletDisplay from "./components/auth/EnhancedWalletDisplay";
 
 type UiAsset = {
   id: string;
@@ -19,38 +20,7 @@ type UiAsset = {
   external_url: string | null;
 };
 
-// Web3Auth Login Button Component
-function Web3AuthLoginButton() {
-  const { connect, isConnected, loading: connectLoading, error: connectError } = useWeb3AuthConnect();
-  const { disconnect, loading: disconnectLoading, error: disconnectError } = useWeb3AuthDisconnect();
-  const { accounts } = useSolanaWallet();
 
-  const handleClick = async () => {
-    if (isConnected) {
-      await disconnect();
-    } else {
-      await connect();
-    }
-  };
-
-  const loading = connectLoading || disconnectLoading;
-
-  return (
-    <button
-      onClick={handleClick}
-      disabled={loading}
-      className="!bg-gradient-to-r !from-purple-600 !to-blue-600 !rounded-2xl !text-sm px-6 py-3 text-white font-medium hover:from-purple-700 hover:to-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      {loading ? (
-        'Loading...'
-      ) : isConnected ? (
-        `Disconnect (${accounts?.[0]?.slice(0, 4)}...${accounts?.[0]?.slice(-4)})`
-      ) : (
-        'Login with Social'
-      )}
-    </button>
-  );
-}
 
 export default function Home() {
   const [q, setQ] = useState("");
@@ -202,7 +172,7 @@ export default function Home() {
           {/* Top Bar with Wallet and Voice Tutor */}
           <div className="flex justify-between items-center mb-8">
             <div className="flex items-center gap-4">
-              <Web3AuthLoginButton />
+              <EnhancedWalletDisplay />
             </div>
             <button
               onClick={handleVoiceSessionToggle}
