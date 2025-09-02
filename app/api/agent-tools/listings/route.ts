@@ -14,31 +14,43 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get listings for this token from Magic Eden
+    console.log(`🔍 [ListingsAPI] Fetching Magic Eden listings for mint: ${mint.substring(0, 8)}...`);
+    
+    // Get listings for this token from Magic Eden with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+    
     const response = await fetch(
       `${MAGIC_EDEN_API}/tokens/${mint}/listings`,
       {
         headers: {
           "Accept": "application/json",
         },
+        signal: controller.signal
       }
     );
+    
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
+      console.warn(`⚠️ [ListingsAPI] Magic Eden API returned ${response.status} for mint ${mint.substring(0, 8)}...`);
+      
       if (response.status === 404) {
+        console.log(`📭 [ListingsAPI] No listings found for mint ${mint.substring(0, 8)}...`);
         return NextResponse.json({
           listings: [],
           message: "No listings found for this NFT"
         });
       }
       if (response.status === 400) {
+        console.error(`❌ [ListingsAPI] Invalid mint address: ${mint.substring(0, 8)}...`);
         return NextResponse.json({
           listings: [],
           error: `Invalid mint address: "${mint}". Please use the full Solana mint address (base58 string), not the NFT name or display ID.`,
           message: "Invalid mint address format"
         });
       }
-      throw new Error(`Magic Eden API error: ${response.status}`);
+      throw new Error(`Magic Eden API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -56,15 +68,26 @@ export async function POST(req: NextRequest) {
       expiry: listing.expiry,
     })) : [];
 
+    console.log(`✅ [ListingsAPI] Successfully fetched ${listings.length} listings for mint ${mint.substring(0, 8)}...`);
+    
     return NextResponse.json({
       listings,
       count: listings.length,
       mint
     });
   } catch (error) {
-    console.error("Error fetching listings:", error);
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`💥 [ListingsAPI] Error fetching listings:`, {
+      error: errorMsg,
+      isTimeout: errorMsg.includes('aborted') || errorMsg.includes('timeout'),
+      isNetworkError: errorMsg.includes('fetch') || errorMsg.includes('network')
+    });
+    
     return NextResponse.json(
-      { error: "Failed to fetch listings" },
+      { 
+        error: "Failed to fetch listings",
+        details: errorMsg.includes('aborted') ? 'Request timeout' : errorMsg 
+      },
       { status: 500 }
     );
   }

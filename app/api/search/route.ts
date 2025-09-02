@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get("q") ?? "").trim();
   const page = Number(searchParams.get("page") ?? "1");
-  const limit = Math.min(Number(searchParams.get("limit") ?? "50"), 100);
+  const limit = Math.min(Number(searchParams.get("limit") ?? "30"), 30);
   const includeCompressed =
     (searchParams.get("includeCompressed") ?? "true") === "true";
 
@@ -50,8 +50,8 @@ export async function GET(req: NextRequest) {
   let items: DasAsset[] = [];
 
   if (candidates.length) {
-    // For specific NFT searches (contains #), use larger limit to find specific items
-    const searchLimit = q.includes('#') ? Math.min(limit * 5, 500) : limit;
+    // For specific NFT searches (contains #), use slightly larger limit to find specific items
+    const searchLimit = q.includes('#') ? Math.min(limit * 2, 50) : limit;
     const results = await Promise.all(
       candidates.map((c) => getAssetsByCollection(c.address, page, searchLimit))
     );
@@ -82,8 +82,8 @@ export async function GET(req: NextRequest) {
     searchNote = `Specific NFT "${q}" not found in our search index. Try searching for just the collection name (e.g., "Goatys") to browse available NFTs, or check Magic Eden directly.`;
   }
 
-  // 5) Shape response
-  const minimal = filtered.map((a) => ({
+  // 5) Shape response (cap to limit to prevent UI overload)
+  const minimal = filtered.slice(0, limit).map((a) => ({
     id: a.id,
     name: a.content?.metadata?.name ?? "Untitled",
     image:

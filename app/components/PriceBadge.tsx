@@ -27,13 +27,18 @@ export default function PriceBadge({ mint, onListingData, className = "" }: Pric
     let isCancelled = false;
     
     const checkListing = async () => {
+      console.log(`🎯 [PriceBadge] Starting check for mint ${mint.substring(0, 8)}...`);
+      
       try {
         const data = await listingQueue.checkListing(mint);
+        console.log(`📋 [PriceBadge] Received data for mint ${mint.substring(0, 8)}...:`, data);
 
         if (isCancelled) return;
         
         if (data.listings && data.listings.length > 0) {
           const firstListing = data.listings[0];
+          console.log(`💎 [PriceBadge] Setting LISTED for mint ${mint.substring(0, 8)}... with price ${firstListing.price} SOL`);
+          
           const listingData: ListingData = {
             status: 'listed',
             price: firstListing.price,
@@ -44,6 +49,8 @@ export default function PriceBadge({ mint, onListingData, className = "" }: Pric
           setListing(listingData);
           onListingData?.(mint, listingData);
         } else {
+          console.log(`📭 [PriceBadge] Setting UNLISTED for mint ${mint.substring(0, 8)}... (${data.listings?.length || 0} listings)`);
+          
           const listingData: ListingData = { status: 'unlisted' };
           setListing(listingData);
           onListingData?.(mint, listingData);
@@ -51,17 +58,25 @@ export default function PriceBadge({ mint, onListingData, className = "" }: Pric
       } catch (error) {
         if (isCancelled) return;
         
+        const errorMsg = error instanceof Error ? error.message : 'Failed to check listing';
+        console.error(`💥 [PriceBadge] Setting ERROR for mint ${mint.substring(0, 8)}...:`, {
+          error: errorMsg,
+          errorType: typeof error,
+          isAbortError: errorMsg.includes('aborted'),
+          isTimeoutError: errorMsg.includes('timeout')
+        });
+        
         const errorData: ListingData = { 
           status: 'error', 
-          error: error instanceof Error ? error.message : 'Failed to check listing'
+          error: errorMsg
         };
         setListing(errorData);
         onListingData?.(mint, errorData);
       }
     };
 
-    // Add a small delay to prevent immediate API spam
-    const timer = setTimeout(checkListing, Math.random() * 2000 + 500); // 500ms-2.5s random delay
+    // Add a small delay to prevent immediate API spam (reduced for faster loading)
+    const timer = setTimeout(checkListing, Math.random() * 1000 + 200); // 200ms-1.2s random delay
 
     return () => {
       isCancelled = true;
