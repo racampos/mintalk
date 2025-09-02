@@ -40,6 +40,9 @@ export async function GET(req: NextRequest) {
           "For example: 'Let me search for that NFT for you...' then call search_nfts. " +
           "Or: 'I'll check the current listings and prices...' then call get_listings. " +
           "Or: 'Perfect! I'll proceed with purchasing this NFT...' then call buy_nft. " +
+          "WEB3AUTH SIGNING: The user's Web3Auth wallet handles transaction signing automatically and seamlessly. " +
+          "Do NOT tell users they need to 'approve' or 'sign' anything manually - the wallet integration is automatic. " +
+          "Instead say: 'I'll execute the transaction now' or 'Processing the transaction on the blockchain'. " +
           "When users want to buy an NFT: 1) Get their wallet info with get_wallet_info, 2) Get listings with get_listings, 3) Confirm price with user, 4) Execute purchase with buy_nft + request_wallet_signature. " +
           "When users want to sell/list their NFT: 1) Get their wallet info, 2) Get their owned NFTs with get_owned_nfts, 3) Let user pick which NFT and price, 4) Create listing with list_nft + request_wallet_signature. " +
           "Always explain concepts in simple terms, ask for explicit confirmation before spending SOL or listing NFTs, " +
