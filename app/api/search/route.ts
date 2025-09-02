@@ -3,13 +3,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAssetsByCollection, searchAssets, DasAsset } from "@/lib/helius";
 import registry from "@/data/collections.json";
 
-function textMatches(asset: DasAsset, q: string) {
+function textMatches(asset: DasAsset, q: string, foundByCollection: boolean = false) {
   const needle = q.toLowerCase();
   const name = asset.content?.metadata?.name?.toLowerCase() ?? "";
   const desc = asset.content?.metadata?.description?.toLowerCase() ?? "";
   const traits = (asset.content?.metadata?.attributes ?? [])
     .map((a) => `${a.trait_type ?? ""} ${a.value ?? ""}`.toLowerCase())
     .join(" ");
+  
+  // If we found this asset by collection matching, be more lenient with text matching
+  if (foundByCollection) {
+    // Split search query into words and match if ANY word appears
+    const searchWords = needle.split(/\s+/).filter(w => w.length > 2); // Skip short words
+    return searchWords.some(word => 
+      name.includes(word) || desc.includes(word) || traits.includes(word)
+    );
+  }
+  
+  // Original strict matching for non-collection searches
   return (
     name.includes(needle) || desc.includes(needle) || traits.includes(needle)
   );
@@ -62,7 +73,8 @@ export async function GET(req: NextRequest) {
   }
 
   // 3) Filter by keyword locally
-  const filtered = items.filter((a) => textMatches(a, q));
+  const foundByCollection = candidates.length > 0;
+  const filtered = items.filter((a) => textMatches(a, q, foundByCollection));
 
   // 4) Handle empty results with helpful message
   let searchNote = null;
