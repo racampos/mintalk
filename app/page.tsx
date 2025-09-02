@@ -9,6 +9,7 @@ import PriceBadge, { ListingData } from "./components/PriceBadge";
 import listingQueue from "./services/listingQueue";
 import Confetti from "./components/ui/Confetti";
 import EnhancedWalletDisplay from "./components/auth/EnhancedWalletDisplay";
+import MyNFTs from "./components/nft/MyNFTs";
 
 type UiAsset = {
   id: string;
@@ -492,6 +493,17 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* My NFTs Section - Show when connected and no search results */}
+        {isConnected && items.length === 0 && !loading && (
+          <div className="animate-fade-in-up mb-16 mt-12" style={{animationDelay: '0.8s'}}>
+            <MyNFTs 
+              walletAddress={accounts?.[0]} 
+              isConnected={isConnected}
+              className="max-w-7xl mx-auto"
+            />
           </div>
         )}
         

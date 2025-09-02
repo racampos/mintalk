@@ -41,8 +41,9 @@ export async function GET(req: NextRequest) {
           "Or: 'I'll check the current listings and prices...' then call get_listings. " +
           "Or: 'Perfect! I'll proceed with purchasing this NFT...' then call buy_nft. " +
           "When users want to buy an NFT: 1) Get their wallet info with get_wallet_info, 2) Get listings with get_listings, 3) Confirm price with user, 4) Execute purchase with buy_nft + request_wallet_signature. " +
-          "Always explain concepts in simple terms, ask for explicit confirmation before spending SOL, " +
-          "and execute transactions when users confirm. You have tools to search NFTs, check listings, " +
+          "When users want to sell/list their NFT: 1) Get their wallet info, 2) Get their owned NFTs with get_owned_nfts, 3) Let user pick which NFT and price, 4) Create listing with list_nft + request_wallet_signature. " +
+          "Always explain concepts in simple terms, ask for explicit confirmation before spending SOL or listing NFTs, " +
+          "and execute transactions when users confirm. You have tools to search NFTs, check listings, view owned NFTs, " +
           "and execute complete buy/sell transactions. Be encouraging and educational. " +
           "IMPORTANT: When checking listings or trading NFTs, always use the mint_address (not the name) from search results. " +
           "Mint addresses are long base58 strings like 'A7xKXtQ...', not short names like 'NFT #1234'. " +
@@ -192,6 +193,49 @@ export async function GET(req: NextRequest) {
               type: "object",
               properties: {},
             },
+          },
+          {
+            type: "function",
+            name: "get_owned_nfts",
+            description: "Fetch NFTs owned by the connected wallet. Use this when user asks about 'my NFTs', 'what NFTs do I own', or wants to list/sell their NFTs.",
+            parameters: {
+              type: "object",
+              properties: {
+                ownerAddress: {
+                  type: "string",
+                  description: "The wallet address of the NFT owner (use from get_wallet_info)"
+                }
+              },
+              required: ["ownerAddress"]
+            }
+          },
+          {
+            type: "function",
+            name: "list_nft",
+            description: "Create a Magic Eden listing transaction to sell/list an NFT. Use this when user wants to 'list', 'sell', or 'put up for sale' their NFT.",
+            parameters: {
+              type: "object",
+              properties: {
+                mint: {
+                  type: "string", 
+                  description: "The mint address of the NFT to list (get from owned NFTs)"
+                },
+                seller: {
+                  type: "string",
+                  description: "The seller's wallet address (use from get_wallet_info)"
+                },
+                price: {
+                  type: "number",
+                  description: "The listing price in SOL (e.g., 0.5 for 0.5 SOL)"
+                },
+                expiry: {
+                  type: "number",
+                  description: "Optional expiry timestamp in seconds (0 for no expiry)",
+                  default: 0
+                }
+              },
+              required: ["mint", "seller", "price"]
+            }
           },
         ],
       }),

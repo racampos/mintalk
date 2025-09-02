@@ -82,6 +82,10 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         return 'Getting price information...';
       case 'get_wallet_info':
         return 'Checking wallet status...';
+      case 'get_owned_nfts':
+        return 'Loading your NFT collection...';
+      case 'list_nft':
+        return 'Preparing NFT listing...';
       default:
         return 'Processing...';
     }
@@ -96,7 +100,19 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
     onActionChange(actionText);
     
     try {
-      const parsed = JSON.parse(call.args || "{}");
+      // Clean up args string before parsing - remove any line breaks that might break JSON parsing
+      let cleanedArgs = call.args || "{}";
+      
+      // If this is a request_wallet_signature call with a txBase64, clean up the base64 string
+      if (call.name === 'request_wallet_signature' && cleanedArgs.includes('txBase64')) {
+        // Fix potential line breaks in base64 strings that can break JSON parsing
+        cleanedArgs = cleanedArgs.replace(/"txBase64":\s*"([^"]*(?:\n[^"]*)*)"/, (match, base64Content) => {
+          const cleanBase64 = base64Content.replace(/\s+/g, '');
+          return `"txBase64": "${cleanBase64}"`;
+        });
+      }
+      
+      const parsed = JSON.parse(cleanedArgs);
       let result: any;
 
       switch (call.name) {
@@ -321,6 +337,55 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
               walletConnected: walletConnected || false,
               accountsLength: walletAccounts.length
             };
+          }
+          break;
+
+        case "get_owned_nfts":
+          if (!walletConnected || !walletAccounts || walletAccounts.length === 0) {
+            result = { 
+              error: "Wallet not connected. Please sign in with your social account first.",
+              nfts: []
+            };
+          } else {
+            try {
+              const response = await fetch('/api/user/owned-nfts', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  ownerAddress: parsed.ownerAddress || walletAccounts[0]
+                })
+              });
+              
+              const data = await response.json();
+              if (response.ok) {
+                result = {
+                  success: true,
+                  nfts: data.nfts || [],
+                  count: data.count || 0,
+                  totalResults: data.totalResults || 0
+                };
+              } else {
+                result = { 
+                  error: data.error || "Failed to fetch owned NFTs",
+                  details: data.details
+                };
+              }
+            } catch (error) {
+              result = { 
+                error: "Network error fetching owned NFTs",
+                details: error instanceof Error ? error.message : String(error)
+              };
+            }
+          }
+          break;
+
+        case "list_nft":
+          if (!walletConnected || !walletAccounts || walletAccounts.length === 0) {
+            result = { error: "Wallet not connected. Please sign in with your social account first." };
+          } else {
+            result = await postJSON("/api/agent-tools/list-nft", parsed);
           }
           break;
 
