@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import VoiceTutor from "./components/realtime/VoiceTutor";
 import { VoiceHeroCircle, VoiceState } from "./components/realtime/VoiceHeroCircle";
@@ -68,14 +68,88 @@ export default function Home() {
     setQ(results.query); // Update search box to show what was searched
     setError(results.searchNote || null);
     setLoading(false);
+    
     // Clear previous listing data and queue cache when new search results arrive
     setListingsData({});
     listingQueue.clearCache();
+    
+    // Clear any pending sort operations
+    if (sortTimerRef.current) {
+      clearTimeout(sortTimerRef.current);
+      sortTimerRef.current = null;
+    }
+  }, []);
+
+  // Debounced sorting timer
+  const sortTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sort NFTs with listed ones first
+  const sortNFTsByListingStatus = useCallback((nfts: UiAsset[], listings: Record<string, ListingData>) => {
+    return [...nfts].sort((a, b) => {
+      const aListing = listings[a.id];
+      const bListing = listings[b.id];
+      
+      // Listed NFTs (with price) come first
+      const aHasPrice = aListing?.status === 'listed' && aListing.price;
+      const bHasPrice = bListing?.status === 'listed' && bListing.price;
+      
+      if (aHasPrice && !bHasPrice) return -1;
+      if (!aHasPrice && bHasPrice) return 1;
+      
+      // Both listed: sort by price (lowest first for better deals)
+      if (aHasPrice && bHasPrice) {
+        return (aListing.price || 0) - (bListing.price || 0);
+      }
+      
+      // Both unlisted or unknown: keep original order
+      return 0;
+    });
   }, []);
 
   // Handle listing data updates from PriceBadges
   const handleListingData = useCallback((mint: string, data: ListingData) => {
-    setListingsData(prev => ({ ...prev, [mint]: data }));
+    setListingsData(prev => {
+      const updated = { ...prev, [mint]: data };
+      
+      // Progressive sorting: sort immediately for listed NFTs, batch for unlisted
+      const isNewListing = data.status === 'listed' && data.price;
+      
+      if (isNewListing) {
+        // Listed NFT found - sort immediately for instant visual feedback!
+        setItems(currentItems => {
+          const sorted = sortNFTsByListingStatus(currentItems, updated);
+          console.log(`🚀 Listed NFT found! Immediate sort: ${data.price} SOL`);
+          return sorted;
+        });
+      } else {
+        // Unlisted/error status - use small debounce to batch updates
+        if (sortTimerRef.current) {
+          clearTimeout(sortTimerRef.current);
+        }
+        
+        sortTimerRef.current = setTimeout(() => {
+          setItems(currentItems => {
+            const sorted = sortNFTsByListingStatus(currentItems, updated);
+            const listedCount = Object.values(updated).filter(l => l.status === 'listed').length;
+            if (listedCount > 0) {
+              console.log(`🔄 Progressive sort: ${listedCount} listed NFTs at front`);
+            }
+            return sorted;
+          });
+        }, 150); // Very small debounce for unlisted items
+      }
+      
+      return updated;
+    });
+  }, [sortNFTsByListingStatus]);
+
+  // Cleanup sort timer on component unmount
+  useEffect(() => {
+    return () => {
+      if (sortTimerRef.current) {
+        clearTimeout(sortTimerRef.current);
+      }
+    };
   }, []);
 
   // Handle confetti celebration trigger
