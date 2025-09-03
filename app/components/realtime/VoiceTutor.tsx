@@ -166,20 +166,20 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
                 priceMessage = " I'm now checking current market prices for these NFTs.";
               }
               
-              // Optimize result for AI - include sample NFTs with mint addresses for reference
+              // Provide complete NFT results for AI - now that we have backend caching, we can handle all NFTs efficiently
               result = {
                 success: true,
                 total: fullResult.items.length,
                 query: parsed.q,
                 ui_updated: true,
                 price_summary: priceRange,
-                sample_nfts: fullResult.items.slice(0, 5).map((item: any) => ({
+                all_nfts: fullResult.items.map((item: any) => ({
                   name: item.name,
                   mint_address: item.id,
                   collection: item.collection,
                   compressed: item.compressed
                 })),
-                message: `Successfully found ${fullResult.items.length} NFTs matching "${parsed.q}". The search results are now displayed on your screen in a visual grid.${priceMessage} You can see live price badges appearing on each NFT as the data loads.`
+                message: `Successfully found ${fullResult.items.length} NFTs matching "${parsed.q}". The search results are now displayed on your screen in a visual grid.${priceMessage} You can see live price badges appearing on each NFT as the data loads. I now have access to all ${fullResult.items.length} NFTs for price analysis.`
               };
             } else {
               result = {

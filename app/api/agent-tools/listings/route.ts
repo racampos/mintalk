@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import listingCache from "@/app/lib/listing-cache";
 
 // Magic Eden API base URL
 const MAGIC_EDEN_API = "https://api-mainnet.magiceden.dev/v2";
@@ -14,7 +15,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`🔍 [ListingsAPI] Fetching Magic Eden listings for mint: ${mint.substring(0, 8)}...`);
+    console.log(`🔍 [ListingsAPI] Looking up listings for mint: ${mint.substring(0, 8)}...`);
+    
+    // Check cache first
+    const cachedData = listingCache.get(mint);
+    if (cachedData) {
+      console.log(`⚡ [ListingsAPI] Returning cached data for mint: ${mint.substring(0, 8)}...`);
+      return NextResponse.json(cachedData);
+    }
+
+    console.log(`🌐 [ListingsAPI] Cache miss - fetching from Magic Eden API for mint: ${mint.substring(0, 8)}...`);
     
     // Get listings for this token from Magic Eden with timeout
     const controller = new AbortController();
@@ -70,11 +80,17 @@ export async function POST(req: NextRequest) {
 
     console.log(`✅ [ListingsAPI] Successfully fetched ${listings.length} listings for mint ${mint.substring(0, 8)}...`);
     
-    return NextResponse.json({
+    // Prepare response data
+    const responseData = {
       listings,
       count: listings.length,
       mint
-    });
+    };
+
+    // Store in cache for future use
+    listingCache.set(mint, responseData);
+    
+    return NextResponse.json(responseData);
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     console.error(`💥 [ListingsAPI] Error fetching listings:`, {
