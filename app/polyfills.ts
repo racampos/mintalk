@@ -10,4 +10,5 @@ if (typeof window !== 'undefined') {
 }
 
 // Export to ensure the file is imported
-export default {};
+const polyfills = {};
+export default polyfills;

@@ -123,7 +123,7 @@ export default function MyNFTs({ walletAddress, isConnected, className = '' }: M
           </svg>
         </div>
         <h3 className="text-xl font-semibold text-white mb-2">No NFTs Found</h3>
-        <p className="text-gray-400 mb-4">You don't own any NFTs yet. Start exploring and collecting!</p>
+        <p className="text-gray-400 mb-4">You don&apos;t own any NFTs yet. Start exploring and collecting!</p>
         <button
           onClick={fetchOwnedNFTs}
           className="px-6 py-2 glass-card hover:bg-white/10 rounded-lg text-cyan-400 transition-colors duration-200"
