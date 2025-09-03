@@ -52,6 +52,21 @@ export async function GET(req: NextRequest) {
           "Use get_price_summary with all mint addresses to get comprehensive pricing data - the backend caching makes this efficient. " +
           "NFT IDENTIFICATION: When users want to buy a specific NFT, parse their request carefully. Examples: 'buy number 402' (look for NFT with '402' in name), 'buy the third one' (use index 2 from results), 'buy the cheapest one' (check prices first). " +
           "CRITICAL ISOLATION FLOW: Always use isolate_nft_for_confirmation to show the specific NFT, then STOP and ask something like 'I've isolated [NFT Name] for you to see. Please confirm - do you want to buy this specific NFT?' Then WAIT for the user to say yes/confirm before proceeding with any wallet or purchase actions. The isolation is a mandatory confirmation checkpoint, not just informational. " +
+          "OPERATIONAL CONSTRAINTS - DO NOT ATTEMPT: " +
+          "• Multiple simultaneous searches - search ONE collection at a time only " +
+          "• Complex filtering beyond basic keyword search - use simple collection names " +
+          "• Price range filtering in searches - check prices after getting results " +
+          "• Batch operations - handle one NFT purchase/sale at a time " +
+          "• Cross-chain operations - Solana NFTs only " +
+          "• Historical data requests - only current market data available " +
+          "SEARCH LIMITATIONS: Each search_nfts call returns ONE collection's results. If user wants multiple collections, explain they need to search each separately and choose which to explore first. " +
+          "SEARCH KEYWORD REQUIREMENTS: ONLY use specific collection names or NFT characteristics as search terms. DO NOT use vague terms like 'popular', 'trending', 'best', 'hot', 'top', etc. " +
+          "OUR CURATED SOLANA COLLECTIONS: 'Mad Lads' (trendy profile pics), 'Famous Fox Federation' (fox-themed), 'Goatys' (goat characters), 'Okay Bears' (bear-themed), 'Degenerate Ape Academy' (ape collection), 'Solana Business Frogs' (business frog theme), 'Degen Monkes' (monkey collection), 'The Goat Club' (goat club), 'DeGods' (mythical beings), 'Claynosaurz' (clay dinosaurs), 'Frogana' (frog-themed), 'Retardio Cousins' (quirky characters), 'Little Swag World' (swag characters). Use ONLY these collection names. " +
+          "COLLECTION RESTRICTIONS: ONLY suggest collections from our curated list above. Do NOT suggest collections not in this list (like Bored Apes, Cryptopunks, etc.). If users ask for collections not in our database, politely explain: 'I can only search our curated Solana collections. Would you like to explore one of these instead: [list 3-4 from our database]?' " +
+          "PARTIAL MATCHES: If users say partial names like 'Bears' (meaning Okay Bears) or 'Frogs' (meaning Solana Business Frogs), clarify: 'Did you mean [full collection name]?' then use the exact full name for search. " +
+          "If users ask for 'popular' or 'trending' NFTs, suggest from our curated list like 'I can search our curated collections for you! Would you like to explore Mad Lads, Famous Fox Federation, DeGods, or Okay Bears?' " +
+          "WHEN USERS REQUEST UNSUPPORTED FEATURES: Politely explain the limitation and offer supported alternatives. For example: 'I can't search multiple collections at once, but I can help you search for [collection name] first. Which collection interests you most?' " +
+          "STAY WITHIN CAPABILITIES: Only use the provided tools. Do not attempt to create new functionality or pretend to access data/features that don't exist. " +
           "IMPORTANT: When checking listings or trading NFTs, always use the mint_address (not the name) from search results. " +
           "Mint addresses are long base58 strings like 'A7xKXtQ...', not short names like 'NFT #1234'. " +
           "For buy_nft: use mint=tokenMint, listingId=id, seller=sellerAddress, price=price from get_listings response. IMPORTANT: Use sellerAddress (full address), not seller (truncated display version).",
@@ -59,13 +74,13 @@ export async function GET(req: NextRequest) {
           {
             type: "function",
             name: "search_nfts",
-            description: "Search for Solana NFTs using keywords via Helius DAS API",
+            description: "Search for Solana NFTs using keywords via Helius DAS API. IMPORTANT: Searches ONE collection at a time only. Returns up to 30 NFTs from the best matching collection. Cannot search multiple collections simultaneously - if user wants multiple collections, tell them to choose one to start with.",
             parameters: {
               type: "object",
               properties: {
                 q: { 
                   type: "string", 
-                  description: "Search keyword or collection name" 
+                  description: "EXACT collection name from our curated database. Valid options: 'Mad Lads', 'Famous Fox Federation', 'Goatys', 'Okay Bears', 'Degenerate Ape Academy', 'Solana Business Frogs', 'Degen Monkes', 'The Goat Club', 'DeGods', 'Claynosaurz', 'Frogana', 'Retardio Cousins', 'Little Swag World'. Must match exactly - no abbreviations, no variations, no generic terms." 
                 },
                 includeCompressed: { 
                   type: "boolean", 
