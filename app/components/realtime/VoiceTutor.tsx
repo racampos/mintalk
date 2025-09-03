@@ -636,7 +636,6 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
       dataChannelRef.current = dc;
       
       dc.onmessage = handleDataChannelMessage;
-      dc.onopen = () => console.log("Data channel opened");
       dc.onclose = () => console.log("Data channel closed");
 
       // Setup audio element for playback
@@ -714,6 +713,35 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
       setIsRecording(true);
       setTranscript(["🎤 Voice tutor connected! Start speaking to ask about Solana NFTs."]);
       console.log(`🎉 Voice session ready!`);
+      
+      // Set up initial greeting when data channel opens
+      dc.onopen = () => {
+        console.log("Data channel opened");
+        console.log(`👋 Sending session update and initial greeting`);
+        
+        // First, update the session with instructions (voice is already set from server)
+        const sessionUpdate = {
+          type: "session.update",
+          session: {
+            instructions: "You are an NFT Voice Tutor specializing in Solana NFTs. You help users explore, buy, and sell NFTs from curated collections. Always be friendly, helpful, and explain actions before executing them. IMPORTANT: Always communicate in English by default unless the user explicitly requests or communicates in another language. If the user speaks in another language, feel free to respond in that language to match their preference.",
+            turn_detection: { type: "server_vad" }
+          }
+        };
+        
+        dc.send(JSON.stringify(sessionUpdate));
+        
+        // Then immediately trigger the greeting response
+        const greetingResponse = {
+          type: "response.create",
+          response: {
+            conversation: "none", // Clean slate greeting, ignore any prior context
+            modalities: ["audio", "text"],
+            instructions: "Give a brief, friendly greeting IN ENGLISH introducing yourself as the NFT Voice Tutor. Mention that you can help explore Solana NFTs from curated collections like Mad Lads, Okay Bears, and DeGods. You can help search, check prices, buy NFTs, list NFTs for sale, and view their collection. Ask what they'd like to explore first. Keep it conversational and not too long."
+          }
+        };
+        
+        dc.send(JSON.stringify(greetingResponse));
+      };
       
       // Immediately notify parent of connected status
       console.log(`🔄 VoiceTutor [${componentId.current}] Directly calling onConnectionStatusChange('connected')`);
