@@ -24,12 +24,13 @@ interface VoiceTutorProps {
   onActionChange: (action: string) => void;
   onConfettiTrigger?: () => void;
   onTransactionComplete?: (signature: string) => void;
+  onIsolateNFT?: (nftData: { mint: string, name: string, collection: string }) => void;
   listingsData?: Record<string, any>;
   walletConnected?: boolean;
   walletAccounts?: string[];
 }
 
-export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults, onVoiceStateChange, onActionChange, onConfettiTrigger, onTransactionComplete, listingsData = {}, walletConnected, walletAccounts }: VoiceTutorProps) {
+export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults, onVoiceStateChange, onActionChange, onConfettiTrigger, onTransactionComplete, onIsolateNFT, listingsData = {}, walletConnected, walletAccounts }: VoiceTutorProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -86,6 +87,8 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         return 'Loading your NFT collection...';
       case 'list_nft':
         return 'Preparing NFT listing...';
+      case 'isolate_nft_for_confirmation':
+        return 'Isolating NFT for confirmation...';
       default:
         return 'Processing...';
     }
@@ -389,6 +392,20 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
           }
           break;
 
+        case "isolate_nft_for_confirmation":
+          // Call the isolation API
+          result = await postJSON("/api/agent-tools/isolate-nft", parsed);
+          
+          // If successful, trigger UI isolation using dedicated callback
+          if (result.success && result.isolated_nft) {
+            onIsolateNFT?.({
+              mint: result.isolated_nft.mint,
+              name: result.isolated_nft.name,
+              collection: result.isolated_nft.collection
+            });
+          }
+          break;
+
         default:
           result = { error: `Unknown tool: ${call.name}` };
       }
@@ -421,7 +438,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         dataChannelRef.current.send(JSON.stringify(errorResult));
       }
     }
-  }, [walletConnected, walletAccounts, signAndSendTransaction, postJSON, onSearchResults, onActionChange, onConfettiTrigger, onTransactionComplete, listingsData]);
+  }, [walletConnected, walletAccounts, signAndSendTransaction, postJSON, onSearchResults, onActionChange, onConfettiTrigger, onTransactionComplete, onIsolateNFT, listingsData]);
 
   // Handle data channel messages
   const handleDataChannelMessage = useCallback(async (event: MessageEvent) => {

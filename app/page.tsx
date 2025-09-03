@@ -36,6 +36,8 @@ export default function Home() {
   const [transactionSignature, setTransactionSignature] = useState<string | null>(null);
   // Track listing data for each NFT by mint address
   const [listingsData, setListingsData] = useState<Record<string, ListingData>>({});
+  // NFT isolation state for purchase confirmation
+  const [isolatedNFT, setIsolatedNFT] = useState<{ mint: string, name: string, collection: string } | null>(null);
 
   const { isConnected } = useWeb3AuthConnect();
   const { disconnect } = useWeb3AuthDisconnect();
@@ -64,10 +66,15 @@ export default function Home() {
   // Handle search results from voice tutor
   const handleVoiceSearchResults = useCallback((results: { items: UiAsset[], query: string, searchNote?: string }) => {
     console.log(`🎙️ Voice search results received:`, { count: results.items.length, query: results.query });
+    
+    // Normal search results handling
     setItems(results.items);
     setQ(results.query); // Update search box to show what was searched
     setError(results.searchNote || null);
     setLoading(false);
+    
+    // Clear isolation mode when new search results arrive
+    setIsolatedNFT(null);
     
     // Clear previous listing data and queue cache when new search results arrive
     setListingsData({});
@@ -78,6 +85,13 @@ export default function Home() {
       clearTimeout(sortTimerRef.current);
       sortTimerRef.current = null;
     }
+  }, []);
+
+  // Handle NFT isolation for purchase confirmation
+  const handleNFTIsolation = useCallback((nftData: { mint: string, name: string, collection: string }) => {
+    console.log(`🎯 NFT isolation mode activated for:`, nftData.name);
+    setIsolatedNFT(nftData);
+    console.log(`✅ NFT isolated for confirmation:`, nftData.name);
   }, []);
 
   // Debounced sorting timer
@@ -406,17 +420,93 @@ export default function Home() {
           </div>
         )}
 
-        {/* Futuristic NFT Grid */}
-        <div 
-          className="grid gap-8" 
-          style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
-            maxWidth: '1200px',
-            margin: '0 auto',
-            gap: '2rem' 
-          }}
-        >
+        {isolatedNFT ? (
+          // NFT Isolation Mode - Show single NFT for purchase confirmation
+          <div className="w-full max-w-lg mx-auto">
+            
+            {(() => {
+              const nftData = items.find(item => item.id === isolatedNFT.mint);
+              if (!nftData) return <div className="text-red-400">NFT not found</div>;
+              
+              return (
+                <div className="group relative glass-card rounded-3xl overflow-hidden backdrop-blur-xl border-4 border-yellow-500/70 hover:border-yellow-400/90 transition-all duration-500 animate-pulse-subtle">
+                  {/* Special confirmation glow */}
+                  <div className="absolute -inset-2 bg-gradient-to-r from-yellow-500/30 via-orange-500/30 to-red-500/30 rounded-3xl blur-lg animate-pulse"></div>
+                  
+                  {/* Image container */}
+                  <div className="relative overflow-hidden">
+                    <div className="w-full aspect-square bg-gradient-to-br from-gray-800/50 to-gray-900/50 relative">
+                      {nftData.image ? (
+                        <Image
+                          src={nftData.image}
+                          alt={nftData.name}
+                          fill
+                          className="object-cover transition-transform duration-700 group-hover:scale-110"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-500">
+                          <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Price badge in isolation mode */}
+                    <PriceBadge 
+                      mint={nftData.id} 
+                      onListingData={(mint, data) => handleListingData(mint, data)}
+                    />
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="p-6 relative bg-gradient-to-b from-transparent to-gray-900/20">
+                    <h3 className="text-xl font-bold text-white mb-2 line-clamp-2">
+                      {nftData.name}
+                    </h3>
+                    {nftData.collection && (
+                      <p className="text-cyan-400 font-medium mb-3 text-sm">
+                        {nftData.collection}
+                      </p>
+                    )}
+                    {nftData.description && (
+                      <p className="text-gray-300 text-sm line-clamp-3 leading-relaxed">
+                        {nftData.description}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Confirmation banner */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-yellow-600/90 to-orange-600/90 text-white text-center py-3 font-bold">
+                    🎯 READY FOR PURCHASE CONFIRMATION
+                  </div>
+                </div>
+              );
+            })()}
+            
+            {/* Exit isolation mode button */}
+            <div className="text-center mt-6">
+              <button
+                onClick={() => setIsolatedNFT(null)}
+                className="inline-flex items-center px-4 py-2 bg-gray-600/50 hover:bg-gray-600/70 border border-gray-500/50 rounded-xl text-gray-300 text-sm transition-all duration-300"
+              >
+                ← Back to All NFTs
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Normal Futuristic NFT Grid */
+          <div 
+            className="grid gap-8" 
+            style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
+              maxWidth: '1200px',
+              margin: '0 auto',
+              gap: '2rem' 
+            }}
+          >
           {items.map((a, index) => (
             <div
               key={a.id}
@@ -431,7 +521,7 @@ export default function Home() {
               
               {/* Image container */}
               <div className="relative overflow-hidden">
-                <div className="w-full h-72 bg-gradient-to-br from-gray-800/50 to-gray-900/50 relative">
+                <div className="w-full aspect-square bg-gradient-to-br from-gray-800/50 to-gray-900/50 relative">
                   {a.image ? (
                     <Image
                       src={a.image}
@@ -517,7 +607,8 @@ export default function Home() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
         {!loading && items.length === 0 && q && (
           <div className="text-center py-20 animate-fade-in-up">
@@ -629,6 +720,7 @@ export default function Home() {
           onActionChange={handleActionChange}
           onConfettiTrigger={triggerConfetti}
           onTransactionComplete={handleTransactionComplete}
+          onIsolateNFT={handleNFTIsolation}
           listingsData={listingsData}
           walletConnected={isConnected}
           walletAccounts={accounts || undefined}

@@ -43,13 +43,15 @@ export async function GET(req: NextRequest) {
           "WEB3AUTH SIGNING: The user's Web3Auth wallet handles transaction signing automatically and seamlessly. " +
           "Do NOT tell users they need to 'approve' or 'sign' anything manually - the wallet integration is automatic. " +
           "Instead say: 'I'll execute the transaction now' or 'Processing the transaction on the blockchain'. " +
-          "When users want to buy an NFT: 1) Get their wallet info with get_wallet_info, 2) Get listings with get_listings, 3) Confirm price with user, 4) Execute purchase with buy_nft + request_wallet_signature. " +
+          "When users want to buy an NFT: 1) Identify the specific NFT from search results, 2) Use isolate_nft_for_confirmation to show only that NFT, 3) STOP and ask user to confirm they want to buy THAT specific NFT, 4) WAIT for explicit 'yes'/'confirm' from user, 5) ONLY THEN get wallet info and proceed with get_listings + buy_nft + request_wallet_signature. " +
           "When users want to sell/list their NFT: 1) Get their wallet info, 2) Get their owned NFTs with get_owned_nfts, 3) Let user pick which NFT and price, 4) Create listing with list_nft + request_wallet_signature. " +
           "Always explain concepts in simple terms, ask for explicit confirmation before spending SOL or listing NFTs, " +
           "and execute transactions when users confirm. You have tools to search NFTs, check listings, view owned NFTs, " +
           "and execute complete buy/sell transactions. Be encouraging and educational. " +
           "DATA ACCESS: When you search NFTs, you now receive complete access to ALL search results (typically 30 NFTs), not just samples. " +
           "Use get_price_summary with all mint addresses to get comprehensive pricing data - the backend caching makes this efficient. " +
+          "NFT IDENTIFICATION: When users want to buy a specific NFT, parse their request carefully. Examples: 'buy number 402' (look for NFT with '402' in name), 'buy the third one' (use index 2 from results), 'buy the cheapest one' (check prices first). " +
+          "CRITICAL ISOLATION FLOW: Always use isolate_nft_for_confirmation to show the specific NFT, then STOP and ask something like 'I've isolated [NFT Name] for you to see. Please confirm - do you want to buy this specific NFT?' Then WAIT for the user to say yes/confirm before proceeding with any wallet or purchase actions. The isolation is a mandatory confirmation checkpoint, not just informational. " +
           "IMPORTANT: When checking listings or trading NFTs, always use the mint_address (not the name) from search results. " +
           "Mint addresses are long base58 strings like 'A7xKXtQ...', not short names like 'NFT #1234'. " +
           "For buy_nft: use mint=tokenMint, listingId=id, seller=sellerAddress, price=price from get_listings response. IMPORTANT: Use sellerAddress (full address), not seller (truncated display version).",
@@ -240,6 +242,29 @@ export async function GET(req: NextRequest) {
                 }
               },
               required: ["mint", "seller", "price"]
+            }
+          },
+          {
+            type: "function",
+            name: "isolate_nft_for_confirmation",
+            description: "MANDATORY first step for NFT purchases. Isolates a specific NFT on screen and creates a confirmation checkpoint. Shows only the selected NFT with special styling while hiding all others. After calling this, you MUST ask user to confirm they want to buy this specific NFT and WAIT for their explicit yes/confirm before proceeding with wallet or purchase actions.",
+            parameters: {
+              type: "object",
+              properties: {
+                mint: { 
+                  type: "string",
+                  description: "The mint address of the NFT to isolate and show for confirmation"
+                },
+                name: {
+                  type: "string", 
+                  description: "The display name of the NFT for confirmation message"
+                },
+                collection: {
+                  type: "string",
+                  description: "The collection name for confirmation message"
+                }
+              },
+              required: ["mint", "name", "collection"]
             }
           },
         ],

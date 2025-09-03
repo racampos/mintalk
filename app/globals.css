@@ -308,3 +308,19 @@
 .animate-confetti-fall {
   animation: confetti-fall linear forwards;
 }
+
+/* NFT isolation mode animations */
+@keyframes pulse-subtle {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.01);
+    opacity: 0.95;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
+}
