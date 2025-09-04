@@ -229,7 +229,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
 
                 case "request_wallet_signature":
           if (!currentWalletConnected || !currentWalletAccounts || currentWalletAccounts.length === 0) {
-            result = { error: "Wallet not connected. Please login with your social account first." };
+            result = { error: "Wallet not connected. Please click the 'Login with Social' button in the top left corner to connect your MetaMask Embedded Wallet." };
           } else {
             // Validate transaction data
             if (!parsed.txBase64 || parsed.txBase64.trim() === "") {
@@ -261,7 +261,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
                 onTransactionComplete?.(fakeSignature);
               } else {
                 try {
-                  console.log('🔐 Attempting to sign transaction with Web3Auth...');
+                  console.log('🔐 Attempting to sign transaction with MetaMask Embedded Wallet...');
                   
                   // Auto-detect and deserialize the correct transaction type
                   const txBuffer = Buffer.from(parsed.txBase64, 'base64');
@@ -307,7 +307,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
                     throw new Error(`Failed to deserialize transaction: ${errorMsg}. First few bytes: [${Array.from(bytes.slice(0, 10)).join(', ')}]`);
                   }
                   
-                  // Sign and send the transaction using Web3Auth (this returns a promise)
+                  // Sign and send the transaction using MetaMask Embedded Wallet (this returns a promise)
                   const signature = await signAndSendTransaction(transaction);
                   
                   console.log('✅ Transaction signed and sent! Signature:', signature);
@@ -342,13 +342,13 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
               connected: false, 
               walletConnected: currentWalletConnected || false,
               accountsLength: currentWalletAccounts?.length || 0,
-              error: "No wallet connected. Please sign in with your social account first." 
+              error: "No wallet connected. Please click the 'Login with Social' button in the top left corner to connect your MetaMask Embedded Wallet." 
             };
           } else {
             result = { 
               connected: true, 
               address: currentWalletAccounts[0],
-              provider: "Web3Auth",
+              provider: "MetaMask Embedded Wallet",
               walletConnected: currentWalletConnected || false,
               accountsLength: currentWalletAccounts.length
             };
@@ -358,7 +358,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         case "get_owned_nfts":
           if (!currentWalletConnected || !currentWalletAccounts || currentWalletAccounts.length === 0) {
             result = { 
-              error: "Wallet not connected. Please sign in with your social account first.",
+              error: "Wallet not connected. Please click the 'Login with Social' button in the top left corner to connect your MetaMask Embedded Wallet.",
               nfts: []
             };
           } else {
@@ -398,7 +398,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
 
         case "list_nft":
           if (!currentWalletConnected || !currentWalletAccounts || currentWalletAccounts.length === 0) {
-            result = { error: "Wallet not connected. Please sign in with your social account first." };
+            result = { error: "Wallet not connected. Please click the 'Login with Social' button in the top left corner to connect your MetaMask Embedded Wallet." };
           } else {
             result = await postJSON("/api/agent-tools/list-nft", parsed);
           }
