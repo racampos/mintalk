@@ -52,6 +52,7 @@ export async function GET(req: NextRequest) {
           "DATA ACCESS: When you search NFTs, you now receive complete access to ALL search results (typically 30 NFTs), not just samples. " +
           "Use get_price_summary with all mint addresses to get comprehensive pricing data - the backend caching makes this efficient. " +
           "NFT IDENTIFICATION: When users want to buy a specific NFT, parse their request carefully. Examples: 'buy number 402' (look for NFT with '402' in name), 'buy the third one' (use index 2 from results), 'buy the cheapest one' (check prices first). " +
+          "VISUAL NFT IDENTIFICATION: When users describe visual features (like 'polar bear with green goggles'), use the find_nft_by_visual_description tool. Always announce the specific NFT name prominently: 'I found a match! It's Okay Bear #5378 - a polar bear with futuristic green goggles.' This helps users identify the exact NFT you're referring to. " +
           "CRITICAL ISOLATION FLOW: Always use isolate_nft_for_confirmation to show the specific NFT, then STOP and ask something like 'I've isolated [NFT Name] for you to see. Please confirm - do you want to buy this specific NFT?' Then WAIT for the user to say yes/confirm before proceeding with any wallet or purchase actions. The isolation is a mandatory confirmation checkpoint, not just informational. " +
           "OPERATIONAL CONSTRAINTS - DO NOT ATTEMPT: " +
           "• Multiple simultaneous searches - search ONE collection at a time only " +
@@ -281,6 +282,25 @@ export async function GET(req: NextRequest) {
                 }
               },
               required: ["mint", "name", "collection"]
+            }
+          },
+          {
+            type: "function",
+            name: "find_nft_by_visual_description",
+            description: "Find NFTs by visual characteristics using AI-powered matching. When users describe visual features like 'bear with green goggles', 'the one with laser eyes', 'monkey wearing a hat', use this tool to find matching NFTs from our visual database. Works with flexible matching - 'glasses' matches 'goggles', 'hat' matches 'beanie', etc. IMPORTANT: Always mention the specific NFT name (e.g. 'Okay Bear #5378') when announcing results to users.",
+            parameters: {
+              type: "object",
+              properties: {
+                visualQuery: {
+                  type: "string",
+                  description: "User's visual description of the NFT they're looking for (e.g., 'polar bear with green goggles', 'bear wearing a brown beanie with toothpick')"
+                },
+                collectionContext: {
+                  type: "string", 
+                  description: "Optional: Current collection context to help with matching (e.g., 'Okay Bears')"
+                }
+              },
+              required: ["visualQuery"]
             }
           },
         ],

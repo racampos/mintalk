@@ -19,6 +19,7 @@ type UiAsset = {
   collection: string | null;
   compressed: boolean;
   external_url: string | null;
+  visualDescription?: string | null;
 };
 
 

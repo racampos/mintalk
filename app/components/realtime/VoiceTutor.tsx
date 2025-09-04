@@ -406,6 +406,10 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
           }
           break;
 
+        case "find_nft_by_visual_description":
+          result = await postJSON("/api/agent-tools/find-by-visual", parsed);
+          break;
+
         default:
           result = { error: `Unknown tool: ${call.name}` };
       }

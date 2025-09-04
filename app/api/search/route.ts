@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAssetsByCollection, searchAssets, DasAsset } from "@/lib/helius";
 import registry from "@/data/collections.json";
+import visualDescriptions from "@/data/visual-descriptions.json";
 
 function textMatches(asset: DasAsset, q: string, foundByCollection: boolean = false) {
   const needle = q.toLowerCase();
@@ -97,6 +98,7 @@ export async function GET(req: NextRequest) {
       null,
     compressed: !!a.compression?.compressed,
     external_url: a.content?.links?.external_url ?? null,
+    visualDescription: visualDescriptions[a.id as keyof typeof visualDescriptions] ?? null,
   }));
 
   return NextResponse.json({ 
