@@ -44,6 +44,7 @@ export default function Home() {
   const { disconnect } = useWeb3AuthDisconnect();
   const { accounts } = useSolanaWallet();
 
+
   // Handle connection status updates from VoiceTutor
   const handleConnectionStatusChange = useCallback((status: 'connecting' | 'connected' | 'disconnected') => {
     console.log(`🔄 Parent received status change: ${status}`);

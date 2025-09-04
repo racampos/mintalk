@@ -43,6 +43,16 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
   // Component ID for debugging
   const componentId = useRef(Math.random().toString(36).substring(2, 8));
   
+  // Refs to store current wallet state (fixes React closure timing issues)
+  const walletConnectedRef = useRef(walletConnected);
+  const walletAccountsRef = useRef(walletAccounts);
+  
+  // Update refs whenever props change (fixes React closure timing issues)
+  useEffect(() => {
+    walletConnectedRef.current = walletConnected;
+    walletAccountsRef.current = walletAccounts;
+  }, [walletConnected, walletAccounts]);
+  
 
 
   // Status changes are now handled directly when state changes occur
@@ -97,6 +107,10 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
   // Tool execution handler
   const executeToolCall = useCallback(async (call: PendingCall) => {
     console.log(`🔧 Executing tool: ${call.name}`, call.args);
+    
+    // Use refs to get current wallet state (bypasses React closure issues)
+    const currentWalletConnected = walletConnectedRef.current;
+    const currentWalletAccounts = walletAccountsRef.current;
     
     // Set action text for this tool
     const actionText = getActionText(call.name);
@@ -214,7 +228,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
           break;
 
                 case "request_wallet_signature":
-          if (!walletConnected || !walletAccounts || walletAccounts.length === 0) {
+          if (!currentWalletConnected || !currentWalletAccounts || currentWalletAccounts.length === 0) {
             result = { error: "Wallet not connected. Please login with your social account first." };
           } else {
             // Validate transaction data
@@ -321,30 +335,28 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
           break;
 
         case "get_wallet_info":
-          // Use wallet state from parent props instead of local hooks
-          // Debug logging to see what's happening
-          console.log(`🔍 Wallet info check: walletConnected=${walletConnected}, walletAccounts=${walletAccounts?.length || 0}`, walletAccounts);
+          // Use refs to get current wallet state (bypasses React closure issues)
           
-          if (!walletConnected || !walletAccounts || walletAccounts.length === 0) {
+          if (!currentWalletConnected || !currentWalletAccounts || currentWalletAccounts.length === 0) {
             result = { 
               connected: false, 
-              walletConnected: walletConnected || false,
-              accountsLength: walletAccounts?.length || 0,
+              walletConnected: currentWalletConnected || false,
+              accountsLength: currentWalletAccounts?.length || 0,
               error: "No wallet connected. Please sign in with your social account first." 
             };
           } else {
             result = { 
               connected: true, 
-              address: walletAccounts[0],
+              address: currentWalletAccounts[0],
               provider: "Web3Auth",
-              walletConnected: walletConnected || false,
-              accountsLength: walletAccounts.length
+              walletConnected: currentWalletConnected || false,
+              accountsLength: currentWalletAccounts.length
             };
           }
           break;
 
         case "get_owned_nfts":
-          if (!walletConnected || !walletAccounts || walletAccounts.length === 0) {
+          if (!currentWalletConnected || !currentWalletAccounts || currentWalletAccounts.length === 0) {
             result = { 
               error: "Wallet not connected. Please sign in with your social account first.",
               nfts: []
@@ -357,7 +369,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
                   'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                  ownerAddress: parsed.ownerAddress || walletAccounts[0]
+                  ownerAddress: parsed.ownerAddress || currentWalletAccounts[0]
                 })
               });
               
@@ -385,7 +397,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
           break;
 
         case "list_nft":
-          if (!walletConnected || !walletAccounts || walletAccounts.length === 0) {
+          if (!currentWalletConnected || !currentWalletAccounts || currentWalletAccounts.length === 0) {
             result = { error: "Wallet not connected. Please sign in with your social account first." };
           } else {
             result = await postJSON("/api/agent-tools/list-nft", parsed);
@@ -442,7 +454,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         dataChannelRef.current.send(JSON.stringify(errorResult));
       }
     }
-  }, [walletConnected, walletAccounts, signAndSendTransaction, postJSON, onSearchResults, onActionChange, onConfettiTrigger, onTransactionComplete, onIsolateNFT, listingsData]);
+  }, [signAndSendTransaction, postJSON, onSearchResults, onActionChange, onConfettiTrigger, onTransactionComplete, onIsolateNFT, listingsData]);
 
   // Handle data channel messages
   const handleDataChannelMessage = useCallback(async (event: MessageEvent) => {
