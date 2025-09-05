@@ -3,7 +3,7 @@
 > **MetaMask Embedded Wallets Hackathon Entry**  
 > _Making NFT trading accessible to everyone through conversational AI_
 
-**🚀 [Live Demo](https://mintalk.vercel.app) | 📱 [GitHub](https://github.com/racampos/mintalk)**
+**🚀 [Live Demo](https://mintalk-alpha.vercel.app) | 📱 [GitHub](https://github.com/racampos/mintalk)**
 
 ---
 
