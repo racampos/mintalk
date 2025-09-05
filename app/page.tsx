@@ -352,12 +352,12 @@ export default function Home() {
                           <Image 
                 src="/img/mt-icon.png" 
                 alt="Mintalk Icon" 
-                width={80} 
-                height={80} 
-                className="object-contain drop-shadow-2xl mr-6"
+                width={65} 
+                height={65} 
+                className="object-contain drop-shadow-2xl mr-2"
               />
             <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Mintalk.fun
+              Mintalk
             </span>
           </h1>
           <h2 className="text-3xl font-semibold mb-6 text-white drop-shadow-2xl animate-fade-in-up" style={{animationDelay: '0.3s'}}>
