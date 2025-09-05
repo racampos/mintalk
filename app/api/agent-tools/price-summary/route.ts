@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import listingCache from "@/app/lib/listing-cache";
 
+// Smart price formatting: 3 decimals for prices < 1 SOL, 2 decimals for prices >= 1 SOL
+const formatPrice = (price: number): string => {
+  return price < 1 ? price.toFixed(3) : price.toFixed(2);
+};
+
 export async function POST(req: NextRequest) {
   try {
     const { mints } = await req.json();
@@ -126,7 +131,7 @@ export async function POST(req: NextRequest) {
       success: true,
       summary,
       message: listedNFTs.length > 0 
-        ? `Found ${listedNFTs.length} NFTs with active listings out of ${mints.length} checked. Prices range from ${summary.price_range?.min.toFixed(2)} to ${summary.price_range?.max.toFixed(2)} SOL.`
+        ? `Found ${listedNFTs.length} NFTs with active listings out of ${mints.length} checked. Prices range from ${summary.price_range?.min ? formatPrice(summary.price_range.min) : '0.00'} to ${summary.price_range?.max ? formatPrice(summary.price_range.max) : '0.00'} SOL.`
         : `Checked ${listings.length} NFTs - none currently have active listings on Magic Eden.`,
       timestamp: new Date().toISOString(),
       cachePerformance: {

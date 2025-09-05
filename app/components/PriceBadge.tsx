@@ -20,6 +20,11 @@ interface PriceBadgeProps {
   className?: string;
 }
 
+// Smart price formatting: 3 decimals for prices < 1 SOL, 2 decimals for prices >= 1 SOL
+const formatPrice = (price: number): string => {
+  return price < 1 ? price.toFixed(3) : price.toFixed(2);
+};
+
 export default function PriceBadge({ mint, onListingData, className = "" }: PriceBadgeProps) {
   const [listing, setListing] = useState<ListingData>({ status: 'loading' });
 
@@ -87,7 +92,7 @@ export default function PriceBadge({ mint, onListingData, className = "" }: Pric
         };
       case 'listed':
         return {
-          content: `💎 ${listing.price?.toFixed(2)} SOL`,
+          content: `💎 ${listing.price ? formatPrice(listing.price) : '0.00'} SOL`,
           className: 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30'
         };
       case 'unlisted':

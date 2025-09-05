@@ -180,9 +180,9 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
               let priceMessage = "";
               if (priceRange && priceRange.count > 0) {
                 if (priceRange.count === 1) {
-                  priceMessage = ` I found 1 NFT currently listed for ${priceRange.min.toFixed(2)} SOL.`;
+                  priceMessage = ` I found 1 NFT currently listed for ${priceRange.min < 1 ? priceRange.min.toFixed(3) : priceRange.min.toFixed(2)} SOL.`;
                 } else {
-                  priceMessage = ` I found ${priceRange.count} NFTs with active listings, ranging from ${priceRange.min.toFixed(2)} to ${priceRange.max.toFixed(2)} SOL.`;
+                  priceMessage = ` I found ${priceRange.count} NFTs with active listings, ranging from ${priceRange.min < 1 ? priceRange.min.toFixed(3) : priceRange.min.toFixed(2)} to ${priceRange.max < 1 ? priceRange.max.toFixed(3) : priceRange.max.toFixed(2)} SOL.`;
                 }
               } else if (listingsCount > 0) {
                 priceMessage = " I'm still checking prices in the background - most appear to not be currently listed.";
