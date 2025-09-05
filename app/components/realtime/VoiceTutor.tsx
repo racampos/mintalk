@@ -98,6 +98,8 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         return 'Checking SOL balance...';
       case 'get_mock_mode_status':
         return 'Checking demo mode status...';
+      case 'get_floor_prices':
+        return 'Checking collection floor prices...';
       case 'get_owned_nfts':
         return 'Loading your NFT collection...';
       case 'list_nft':
@@ -422,6 +424,37 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
               : "Live Mode - Real transactions on Solana blockchain. Real SOL will be spent.",
             source: mockMode !== undefined ? "user_toggle" : "environment_variable"
           };
+          break;
+
+        case "get_floor_prices":
+          try {
+            // Parse collections parameter (optional - defaults to all collections)
+            const parsed = call.args ? JSON.parse(call.args) : {};
+            const collectionsParam = parsed.collections ? parsed.collections.join(',') : '';
+            
+            const url = collectionsParam 
+              ? `/api/floor-prices?collections=${encodeURIComponent(collectionsParam)}`
+              : '/api/floor-prices';
+              
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const data = await response.json();
+            result = {
+              success: data.success,
+              timestamp: data.timestamp,
+              collections: data.results,
+              summary: data.summary
+            };
+          } catch (error) {
+            result = { 
+              error: "Failed to fetch floor prices",
+              details: error instanceof Error ? error.message : String(error)
+            };
+          }
           break;
 
         case "get_owned_nfts":

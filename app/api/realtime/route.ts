@@ -100,6 +100,9 @@ export async function GET(req: NextRequest) {
           "COLLECTION RESTRICTIONS: ONLY suggest collections from our curated list above. Do NOT suggest collections not in this list (like Bored Apes, Cryptopunks, etc.). If users ask for collections not in our database, politely explain: 'I can only search our curated Solana collections. Would you like to explore one of these instead: [list 3-4 from our database]?' " +
           "PARTIAL MATCHES: If users say partial names like 'Bears' (meaning Okay Bears) or 'Frogs' (meaning Solana Business Frogs), clarify: 'Did you mean [full collection name]?' then use the exact full name for search. " +
           "If users ask for 'popular' or 'trending' NFTs, suggest from our curated list like 'I can search our curated collections for you! Would you like to explore Mad Lads, Famous Fox Federation, DeGods, or Okay Bears?' " +
+          "PRICE-BASED RECOMMENDATIONS: When users ask for NFTs under a specific price (e.g., 'show me NFTs under 1 SOL'), ALWAYS use get_floor_prices first to check current floor prices. " +
+          "Then recommend collections that have floor prices below the user's budget. For example: 'Let me check current floor prices... I found 4 collections under 1 SOL: Degen Monkes (0.01 SOL), The Goat Club (0.015 SOL), Frogana (0.73 SOL), and Okay Bears (1.8 SOL is above budget). Which would you like to explore?' " +
+          "Always mention actual floor prices when making recommendations and explain why certain collections fit their budget. " +
           "WHEN USERS REQUEST UNSUPPORTED FEATURES: Politely explain the limitation and offer supported alternatives. For example: 'I can't search multiple collections at once, but I can help you search for [collection name] first. Which collection interests you most?' " +
           "STAY WITHIN CAPABILITIES: Only use the provided tools. Do not attempt to create new functionality or pretend to access data/features that don't exist. " +
           "IMPORTANT: When checking listings or trading NFTs, always use the mint_address (not the name) from search results. " +
@@ -267,6 +270,21 @@ export async function GET(req: NextRequest) {
             parameters: {
               type: "object",
               properties: {},
+            },
+          },
+          {
+            type: "function", 
+            name: "get_floor_prices",
+            description: "Get current floor prices for curated NFT collections. Use this to make intelligent price-based recommendations when users ask for NFTs under a certain price. Returns floor prices in SOL for collections like Mad Lads, Okay Bears, DeGods, etc.",
+            parameters: {
+              type: "object",
+              properties: {
+                collections: {
+                  type: "array",
+                  items: { type: "string" },
+                  description: "Optional array of specific collection names to check. If not provided, returns all curated collections."
+                }
+              }
             },
           },
           {
