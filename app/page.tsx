@@ -349,22 +349,22 @@ export default function Home() {
           {/* Dynamic Hero Circle - shows voice states */}
           <VoiceHeroCircle voiceState={voiceState} actionText={voiceAction} transactionSignature={transactionSignature} />
           <h1 className="flex items-center justify-center gap-4 text-8xl font-bold mb-2 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
-            <Image 
-              src="/img/mt-icon.png" 
-              alt="Mintalk Icon" 
-              width={80} 
-              height={80} 
-              className="w-20 h-20 object-contain drop-shadow-2xl"
-            />
+                          <Image 
+                src="/img/mt-icon.png" 
+                alt="Mintalk Icon" 
+                width={80} 
+                height={80} 
+                className="object-contain drop-shadow-2xl mr-6"
+              />
             <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Mintalk
+              Mintalk.fun
             </span>
           </h1>
           <h2 className="text-3xl font-semibold mb-6 text-white drop-shadow-2xl animate-fade-in-up" style={{animationDelay: '0.3s'}}>
             AI-Powered NFT Discovery
           </h2>
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed animate-fade-in-up" style={{animationDelay: '0.4s'}}>
-            Talk to AI, discover NFTs, trade with MetaMask Embedded Wallet
+            Have fun discovering Solana NFTs with AI and MetaMask Embedded Wallets
           </p>
           
         </div>

@@ -1,9 +1,9 @@
-# 🎙️ Mintalk - Your Voice-Powered NFT Trading Companion
+# Mintalk - AI-Powered NFT Discovery
 
 > **MetaMask Embedded Wallets Hackathon Entry**  
 > _Making NFT trading accessible to everyone through conversational AI_
 
-**🚀 [Live Demo](https://mintalk-alpha.vercel.app) | 📱 [GitHub](https://github.com/racampos/mintalk)**
+**🚀 [Live Demo at https://mintalk.fun](https://mintalk.fun) | 📱 [GitHub](https://github.com/racampos/mintalk)**
 
 ---
 
