@@ -257,9 +257,11 @@ export default function Home() {
     }
   }, [connectionStatus]);
 
-  async function runSearch(e?: React.FormEvent) {
+  async function runSearch(e?: React.FormEvent, searchTerm?: string) {
     e?.preventDefault();
-    if (!q.trim()) return;
+    // Use provided searchTerm or fall back to current q state
+    const queryToSearch = searchTerm || q;
+    if (!queryToSearch.trim()) return;
     setLoading(true);
     setError(null);
     // Clear previous listing data and queue cache when new search is performed
@@ -267,7 +269,7 @@ export default function Home() {
     listingQueue.clearCache();
     try {
       const res = await fetch(
-        `/api/search?q=${encodeURIComponent(q)}&limit=60`
+        `/api/search?q=${encodeURIComponent(queryToSearch)}&limit=60`
       );
       const json = await res.json();
       setItems(json.items ?? []);
@@ -432,7 +434,7 @@ export default function Home() {
                     onClick={() => {
                       setQ(term);
                       const fakeEvent = { preventDefault: () => {} };
-                      runSearch(fakeEvent as any);
+                      runSearch(fakeEvent as any, term);
                     }}
                     className="px-4 py-2 glass-light text-white/80 hover:text-white text-sm rounded-full backdrop-blur-md hover:bg-white/10 transition-all duration-200 animate-fade-in-up border border-white/20"
                     style={{animationDelay: `${1 + index * 0.1}s`}}
@@ -689,7 +691,7 @@ export default function Home() {
                       onClick={() => {
                         setQ(term);
                         const fakeEvent = { preventDefault: () => {} };
-                        runSearch(fakeEvent as any);
+                        runSearch(fakeEvent as any, term);
                       }}
                       className="group px-5 py-3 glass-light text-white/80 hover:text-white border border-white/20 hover:border-cyan-400/50 rounded-full backdrop-blur-md hover:bg-white/10 transition-all duration-300 hover:scale-105 animate-fade-in-up"
                       style={{animationDelay: `${index * 0.1}s`}}
