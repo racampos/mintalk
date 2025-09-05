@@ -39,13 +39,24 @@ export async function POST(request: NextRequest) {
     // Format balance for display
     const formattedBalance = balanceSOL.toFixed(4);
 
+    // Transaction fee estimates
+    const basicTxFee = 5000; // ~0.000005 SOL for basic transaction
+    const nftTxFee = 10000;  // ~0.00001 SOL for NFT transactions (higher due to complexity)
+    
     return NextResponse.json({
       address: walletAddress,
       balance_lamports: balanceLamports,
       balance_sol: balanceSOL,
       formatted_balance: `${formattedBalance} SOL`,
       is_zero: balanceLamports === 0,
-      has_insufficient_funds: balanceLamports < 5000 // Less than ~0.000005 SOL (basic transaction fee)
+      has_insufficient_funds: balanceLamports < basicTxFee,
+      has_insufficient_for_nft: balanceLamports < nftTxFee,
+      estimated_tx_fee_sol: nftTxFee / LAMPORTS_PER_SOL,
+      status: balanceLamports === 0 
+        ? "empty" 
+        : balanceLamports < nftTxFee 
+          ? "insufficient_for_transactions" 
+          : "sufficient"
     });
 
   } catch (error) {
