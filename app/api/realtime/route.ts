@@ -45,6 +45,10 @@ export async function GET(req: NextRequest) {
           "METAMASK EMBEDDED WALLET SIGNING: The user's MetaMask Embedded Wallet handles transaction signing automatically and seamlessly. " +
           "Do NOT tell users they need to 'approve' or 'sign' anything manually - the wallet integration is automatic. " +
           "Instead say: 'I'll execute the transaction now' or 'Processing the transaction on the blockchain'. " +
+          "ERROR HANDLING: When transactions fail, immediately use check_sol_balance to diagnose the issue. " +
+          "If the error mentions 'Attempt to debit an account but found no record of a prior credit', 'insufficient funds', or 'Transaction simulation failed', " +
+          "it's almost always a SOL balance issue. Tell users: 'Your wallet doesn't have enough SOL to complete this transaction. You need SOL for both the NFT price and transaction fees.' " +
+          "Then suggest they add SOL to their wallet before trying again. " +
           "When users want to buy an NFT: 1) Identify the specific NFT from search results, 2) Use isolate_nft_for_confirmation to show only that NFT, 3) STOP and ask user to confirm they want to buy THAT specific NFT, 4) WAIT for explicit 'yes'/'confirm' from user, 5) ONLY THEN get wallet info and proceed with get_listings + buy_nft + request_wallet_signature. " +
           "When users want to sell/list their NFT: 1) Get their wallet info, 2) Get their owned NFTs with get_owned_nfts, 3) Let user pick which NFT and price, 4) Create listing with list_nft + request_wallet_signature. " +
           "Always explain concepts in simple terms, ask for explicit confirmation before spending SOL or listing NFTs, " +
@@ -230,6 +234,15 @@ export async function GET(req: NextRequest) {
             type: "function",
             name: "get_wallet_info",
             description: "Get the current connected MetaMask Embedded Wallet address and connection status",
+            parameters: {
+              type: "object",
+              properties: {},
+            },
+          },
+          {
+            type: "function",
+            name: "check_sol_balance",
+            description: "Check the SOL balance of the connected MetaMask Embedded Wallet. Use this to diagnose transaction failures, especially insufficient funds errors. Always check balance before major transactions or when users encounter transaction errors.",
             parameters: {
               type: "object",
               properties: {},

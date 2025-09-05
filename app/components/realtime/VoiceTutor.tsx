@@ -94,6 +94,8 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         return 'Getting price information...';
       case 'get_wallet_info':
         return 'Checking wallet status...';
+      case 'check_sol_balance':
+        return 'Checking SOL balance...';
       case 'get_owned_nfts':
         return 'Loading your NFT collection...';
       case 'list_nft':
@@ -322,8 +324,24 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
                   
                 } catch (error) {
                   console.error('❌ Error signing transaction:', error);
+                  
+                  // Parse error message to detect specific issues
+                  let errorMessage = error instanceof Error ? error.message : 'Unknown error signing transaction';
+                  let specificError = null;
+                  
+                  // Check for insufficient funds errors
+                  if (errorMessage.includes('Attempt to debit an account but found no record of a prior credit') ||
+                      errorMessage.includes('insufficient funds') ||
+                      errorMessage.includes('Insufficient funds') ||
+                      errorMessage.includes('Transaction simulation failed')) {
+                    specificError = 'INSUFFICIENT_FUNDS';
+                    errorMessage = 'Transaction failed due to insufficient SOL balance. You need SOL to pay for transaction fees and any purchase amount.';
+                  }
+                  
                   result = { 
-                    error: error instanceof Error ? error.message : 'Unknown error signing transaction' 
+                    error: errorMessage,
+                    error_type: specificError,
+                    raw_error: error instanceof Error ? error.message : String(error)
                   };
                 }
               }
@@ -353,6 +371,42 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
               walletConnected: currentWalletConnected || false,
               accountsLength: currentWalletAccounts.length
             };
+          }
+          break;
+
+        case "check_sol_balance":
+          if (!currentWalletConnected || !currentWalletAccounts || currentWalletAccounts.length === 0) {
+            result = { 
+              error: "No wallet connected. Please click the 'Login with Social' button in the top left corner to connect your MetaMask Embedded Wallet." 
+            };
+          } else {
+            try {
+              // Make request to check SOL balance
+              const response = await fetch('/api/wallet/balance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  walletAddress: currentWalletAccounts[0]
+                })
+              });
+              
+              if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+              }
+              
+              const data = await response.json();
+              result = {
+                address: currentWalletAccounts[0],
+                balance_sol: data.balance_sol,
+                balance_lamports: data.balance_lamports,
+                formatted_balance: data.formatted_balance
+              };
+            } catch (error) {
+              result = { 
+                error: "Failed to fetch SOL balance",
+                details: error instanceof Error ? error.message : String(error)
+              };
+            }
           }
           break;
 
