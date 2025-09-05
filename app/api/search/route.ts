@@ -95,15 +95,46 @@ export async function GET(req: NextRequest) {
     searchNote = `Specific NFT "${q}" not found in our search index. Try searching for just the collection name (e.g., "Goatys") to browse available NFTs, or check Magic Eden directly.`;
   }
 
+  // Helper function to select the best available image URL
+  const selectBestImageUrl = (asset: any): string | null => {
+    if (!asset.content) return null;
+    
+    // First, check if canonical image (content.links.image) is from a reliable source
+    const canonicalImage = asset.content.links?.image;
+    if (canonicalImage) {
+      // Only override canonical image if it's from known unreliable sources
+      const isUnreliableSource = canonicalImage.includes('shdw-drive.genesysgo.net');
+      
+      if (!isUnreliableSource) {
+        // Use canonical image - it's the official/main image for this NFT
+        return canonicalImage;
+      }
+    }
+    
+    // Fallback: If canonical image is unreliable or missing, use prioritized alternatives
+    const imageFiles = asset.content.files?.filter((f: any) => 
+      f.uri && f.mime?.startsWith("image/")
+    ) || [];
+    
+    // Priority for alternatives: Arweave > IPFS > other sources > Shadow Drive
+    const alternativeSources = imageFiles.sort((a: any, b: any) => {
+      const getSourcePriority = (uri: string) => {
+        if (uri.includes('arweave.net')) return 1;
+        if (uri.includes('ipfs.') || uri.includes('/ipfs/')) return 2;
+        if (uri.includes('shdw-drive.genesysgo.net')) return 4; // Lowest priority
+        return 3; // Other sources
+      };
+      return getSourcePriority(a.uri) - getSourcePriority(b.uri);
+    });
+    
+    return alternativeSources.length > 0 ? alternativeSources[0].uri : canonicalImage;
+  };
+
   // 5) Shape response (cap to limit to prevent UI overload)
   const minimal = filtered.slice(0, limit).map((a) => ({
     id: a.id,
     name: a.content?.metadata?.name ?? "Untitled",
-    image:
-      a.content?.links?.image ||
-      a.content?.files?.find((f) => f.uri && f.mime?.startsWith("image/"))
-        ?.uri ||
-      null,
+    image: selectBestImageUrl(a),
     description: a.content?.metadata?.description ?? "",
     collection:
       a.grouping?.find((g) => g.group_key === "collection")?.group_value ??
