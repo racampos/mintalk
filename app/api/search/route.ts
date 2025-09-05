@@ -16,9 +16,21 @@ function textMatches(asset: DasAsset, q: string, foundByCollection: boolean = fa
   if (foundByCollection) {
     // Split search query into words and match if ANY word appears
     const searchWords = needle.split(/\s+/).filter(w => w.length > 2); // Skip short words
-    return searchWords.some(word => 
-      name.includes(word) || desc.includes(word) || traits.includes(word)
-    );
+    
+    return searchWords.some(word => {
+      // Direct match
+      if (name.includes(word) || desc.includes(word) || traits.includes(word)) {
+        return true;
+      }
+      
+      // Handle singular/plural collection name mismatches (e.g. "DeGods" vs "DeGod #123")
+      const wordWithoutS = word.endsWith('s') ? word.slice(0, -1) : word;
+      const wordWithS = word.endsWith('s') ? word : word + 's';
+      
+      return name.includes(wordWithoutS) || name.includes(wordWithS) ||
+             desc.includes(wordWithoutS) || desc.includes(wordWithS) ||
+             traits.includes(wordWithoutS) || traits.includes(wordWithS);
+    });
   }
   
   // Original strict matching for non-collection searches
