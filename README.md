@@ -84,7 +84,7 @@ NFT trading is intimidating for newcomers. Complex wallets, confusing interfaces
 
 - **Visual AI Database** - 275+ GPT-4 Vision generated NFT descriptions
 - **Real-time Floor Price API** - Live Magic Eden integration for market data
-- **Smart caching system** eliminates duplicate API calls  
+- **Smart caching system** eliminates duplicate API calls
 - **Progressive NFT sorting** - listed items appear first
 - **Curated collections** - 13 premium Solana NFT collections
 - **Proactive error handling** with intelligent balance checking
@@ -96,6 +96,7 @@ NFT trading is intimidating for newcomers. Complex wallets, confusing interfaces
 ## 🎬 User Experience Flow
 
 ### **Visual Search Flow:**
+
 ```
 👤 User: "Find me a monkey with laser eyes"
 🤖 AI: "Let me search our visual database..."
@@ -113,12 +114,13 @@ NFT trading is intimidating for newcomers. Complex wallets, confusing interfaces
 ```
 
 ### **Price-Based Discovery Flow:**
+
 ```
 👤 User: "Show me cool NFTs under 1 SOL"
 🤖 AI: "Let me check current floor prices across our collections..."
 🤖 AI: "I found several great options under 1 SOL:
       • Degen Monkes (0.01 SOL floor) - Awesome monkey collection!
-      • The Goat Club (0.015 SOL floor) - Cool goat club vibes  
+      • The Goat Club (0.015 SOL floor) - Cool goat club vibes
       • Frogana (0.73 SOL floor) - Stylish frog-themed NFTs
       Which collection interests you most?"
 
@@ -143,11 +145,11 @@ const { signAndSendTransaction } = useSignAndSendTransaction();
 ### **OpenAI Realtime API Tools**
 
 - `search_nfts` - Voice-activated NFT discovery across curated collections
-- `find_nft_by_visual_description` - AI visual search with GPT-4 Vision  
+- `find_nft_by_visual_description` - AI visual search with GPT-4 Vision
 - `get_floor_prices` - Real-time floor price data from Magic Eden for smart recommendations
 - `check_sol_balance` - Proactive wallet balance checking
 - `get_mock_mode_status` - Demo vs live mode awareness
-- `get_price_summary` - Instant market analysis  
+- `get_price_summary` - Instant market analysis
 - `isolate_nft_for_confirmation` - Visual safety checks
 - `buy_nft` + `request_wallet_signature` - Complete purchases
 
@@ -211,7 +213,7 @@ npm run dev
     │  • Floor Prices  │ │  • Metadata   │   │    descriptions │
     │  • Market Data   │ └───────────────┘   │  • 275+ analyzed│
     └──────────────────┘         │          └─────────────────┘
-                              │            
+                              │
                        ┌─ Smart Cache ─┐
                        │  • Rate limiting│
                        │  • Shared data  │
