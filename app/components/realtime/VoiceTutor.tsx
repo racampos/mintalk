@@ -752,7 +752,7 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
           response: {
             conversation: "none", // Clean slate greeting, ignore any prior context
             modalities: ["audio", "text"],
-            instructions: "Give a brief, friendly greeting IN ENGLISH introducing yourself as the NFT Voice Tutor. Mention that you can help explore Solana NFTs from curated collections like Mad Lads, Okay Bears, and DeGods. You can help search, check prices, buy NFTs, list NFTs for sale, and view their collection. Ask what they'd like to explore first. Keep it conversational and not too long."
+            instructions: "Give a brief, friendly greeting IN ENGLISH introducing yourself and Mintalk. Say something like: 'Hey there, welcome to Mintalk, your voice-powered NFT trading companion! I'm your personal AI tutor, ready to help you explore Solana NFTs from curated collections like Mad Lads, Okay Bears, and DeGods. I can help you search, check prices, buy NFTs, list NFTs for sale, and view your collection. What would you like to explore first?' Keep it warm, conversational and engaging."
           }
         };
         
