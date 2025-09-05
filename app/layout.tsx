@@ -4,8 +4,11 @@ import "./polyfills";
 import Web3AuthWalletProvider from "./providers/web3auth-provider";
 
 export const metadata: Metadata = {
-  title: "Solana NFT Search & Voice Tutor",
-  description: "Search Solana NFTs using Helius DAS with AI voice assistance",
+  title: "Mintalk - AI-Powered NFT Discovery",
+  description: "Mintalk: Discover and trade Solana NFTs with AI voice assistance powered by MetaMask Embedded Wallets SDK",
+  icons: {
+    icon: '/favicon.png',
+  },
 };
 
 export default function RootLayout({

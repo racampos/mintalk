@@ -306,24 +306,25 @@ export default function Home() {
 
           {/* Dynamic Hero Circle - shows voice states */}
           <VoiceHeroCircle voiceState={voiceState} actionText={voiceAction} transactionSignature={transactionSignature} />
-          <h1 className="text-6xl font-bold mb-6 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+          <h1 className="flex items-center justify-center gap-4 text-8xl font-bold mb-2 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+            <Image 
+              src="/img/mt-icon.png" 
+              alt="Mintalk Icon" 
+              width={80} 
+              height={80} 
+              className="w-20 h-20 object-contain drop-shadow-2xl"
+            />
             <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Solana NFT
+              Mintalk
             </span>
-            <br />
-            <span className="text-white drop-shadow-2xl">Discovery</span>
           </h1>
+          <h2 className="text-3xl font-semibold mb-6 text-white drop-shadow-2xl animate-fade-in-up" style={{animationDelay: '0.3s'}}>
+            AI-Powered NFT Discovery
+          </h2>
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed animate-fade-in-up" style={{animationDelay: '0.4s'}}>
-            🚀 Explore the universe of Solana NFTs with lightning-fast search powered by Helius DAS
+            Talk to AI, discover NFTs, trade with MetaMask Embedded Wallet
           </p>
           
-          {/* Feature badges */}
-          <div className="flex flex-wrap justify-center gap-4 mb-8 animate-fade-in-up" style={{animationDelay: '0.6s'}}>
-            <span className="px-4 py-2 glass-light text-white text-sm rounded-full backdrop-blur-md border border-white/20">⚡ Lightning Fast</span>
-            <span className="px-4 py-2 glass-light text-white text-sm rounded-full backdrop-blur-md border border-white/20">🎨 Beautiful UI</span>
-            <span className="px-4 py-2 glass-light text-white text-sm rounded-full backdrop-blur-md border border-white/20">🔍 Smart Search</span>
-            <span className="px-4 py-2 glass-light text-white text-sm rounded-full backdrop-blur-md border border-white/20">🎤 Voice AI</span>
-          </div>
         </div>
 
         {/* Futuristic Search Form */}
@@ -345,7 +346,7 @@ export default function Home() {
                     <input
                       value={q}
                       onChange={(e) => setQ(e.target.value)}
-                      placeholder="🎨 Search the Solana NFT universe..."
+                      placeholder="🎨 Search NFTs with Mintalk..."
                       className="w-full pl-16 pr-6 py-6 text-xl bg-transparent border-0 outline-none placeholder-white/60 text-white font-medium"
                     />
                     
@@ -385,7 +386,7 @@ export default function Home() {
             <div className="mt-8 text-center">
               <p className="text-white/60 mb-4">✨ Popular searches:</p>
               <div className="flex flex-wrap justify-center gap-3">
-                {['fox', 'ape', 'mad', 'bear', 'solana', 'art'].map((term, index) => (
+                {['fox', 'ape', 'mad', 'bear', 'goat', 'frog'].map((term, index) => (
                   <button
                     key={term}
                     onClick={() => {
@@ -642,7 +643,7 @@ export default function Home() {
               <div className="space-y-4">
                 <p className="text-white/60">🚀 Explore these popular galaxies:</p>
                 <div className="flex flex-wrap gap-3 justify-center">
-                  {['fox', 'ape', 'mad', 'bear', 'art', 'solana'].map((term, index) => (
+                  {['fox', 'ape', 'mad', 'bear', 'frog', 'goat'].map((term, index) => (
                     <button
                       key={term}
                       onClick={() => {
@@ -685,8 +686,8 @@ export default function Home() {
                   </svg>
                 </div>
                 <div className="text-left">
-                  <h4 className="text-white font-semibold">Solana NFT Discovery</h4>
-                  <p className="text-white/60 text-sm">Powered by Helius DAS</p>
+                  <h4 className="text-white font-semibold">Mintalk</h4>
+                  <p className="text-white/60 text-sm">Powered by MetaMask Embedded Wallets SDK</p>
                 </div>
               </div>
               
