@@ -10,6 +10,7 @@ import listingQueue from "./services/listingQueue";
 import Confetti from "./components/ui/Confetti";
 import EnhancedWalletDisplay from "./components/auth/EnhancedWalletDisplay";
 import MyNFTs from "./components/nft/MyNFTs";
+import IOSToggle from "./components/ui/IOSToggle";
 
 type UiAsset = {
   id: string;
@@ -39,10 +40,49 @@ export default function Home() {
   const [listingsData, setListingsData] = useState<Record<string, ListingData>>({});
   // NFT isolation state for purchase confirmation
   const [isolatedNFT, setIsolatedNFT] = useState<{ mint: string, name: string, collection: string } | null>(null);
+  
+  // Mock mode state - overrides env variable when user toggles
+  const [mockModeOverride, setMockModeOverride] = useState<boolean | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const { isConnected } = useWeb3AuthConnect();
   const { disconnect } = useWeb3AuthDisconnect();
   const { accounts } = useSolanaWallet();
+
+  // Computed mock mode - user override takes precedence over env variable
+  const isMockMode = mockModeOverride !== null ? mockModeOverride : (process.env.NEXT_PUBLIC_MOCK_TRANSACTIONS === 'true');
+
+  // Mock mode toggle function
+  const toggleMockMode = useCallback(() => {
+    const newMockMode = !isMockMode;
+    setMockModeOverride(newMockMode);
+    
+    // Show toast notification
+    setToastMessage(newMockMode ? "Mock Mode: ON 🎭" : "Mock Mode: OFF 💰");
+    
+    console.log(`🎭 Mock mode ${newMockMode ? 'enabled' : 'disabled'} by user`);
+  }, [isMockMode]);
+
+  // Keyboard shortcut (Ctrl/Cmd + M) to toggle mock mode
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'm') {
+        event.preventDefault();
+        toggleMockMode();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleMockMode]);
+
+  // Auto-hide toast after 3 seconds
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
 
 
   // Handle connection status updates from VoiceTutor
@@ -691,13 +731,18 @@ export default function Home() {
                 </div>
               </div>
               
-              <div className="flex items-center gap-6 text-white/60">
+              <div className="flex flex-col items-end gap-3 text-white/60">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                   <span className="text-sm">Live on Mainnet</span>
                 </div>
-                <div className="text-sm">
-                  ⚡ Fast • 🔍 Smart • 🎨 Beautiful
+                <div className="flex items-center gap-2 text-white/50 text-sm">
+                  <span>Mock Mode</span>
+                  <IOSToggle
+                    checked={isMockMode}
+                    onChange={toggleMockMode}
+                    size="md"
+                  />
                 </div>
               </div>
             </div>
@@ -727,11 +772,19 @@ export default function Home() {
           listingsData={listingsData}
           walletConnected={isConnected}
           walletAccounts={accounts || undefined}
+          mockMode={isMockMode}
         />
       )}
 
       {/* Confetti celebration */}
       <Confetti show={showConfetti} onComplete={handleConfettiComplete} />
+      
+      {/* Toast notification */}
+      {toastMessage && (
+        <div className="fixed top-4 right-4 bg-gray-900/90 backdrop-blur-md text-white px-4 py-2 rounded-lg shadow-lg border border-white/20 animate-fade-in z-50">
+          <p className="text-sm font-medium">{toastMessage}</p>
+        </div>
+      )}
     </main>
   );
 }

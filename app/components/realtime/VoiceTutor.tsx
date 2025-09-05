@@ -28,9 +28,10 @@ interface VoiceTutorProps {
   listingsData?: Record<string, any>;
   walletConnected?: boolean;
   walletAccounts?: string[];
+  mockMode?: boolean;
 }
 
-export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults, onVoiceStateChange, onActionChange, onConfettiTrigger, onTransactionComplete, onIsolateNFT, listingsData = {}, walletConnected, walletAccounts }: VoiceTutorProps) {
+export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusChange, onSearchResults, onVoiceStateChange, onActionChange, onConfettiTrigger, onTransactionComplete, onIsolateNFT, listingsData = {}, walletConnected, walletAccounts, mockMode }: VoiceTutorProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -237,8 +238,8 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
                 error: "No transaction data provided. The buy transaction may have failed to prepare properly."
               };
             } else {
-              // Check if we're in mock mode for testing
-              const isMockMode = process.env.NEXT_PUBLIC_MOCK_TRANSACTIONS === 'true';
+              // Check if we're in mock mode (user toggle overrides env variable)
+              const isMockMode = mockMode !== undefined ? mockMode : (process.env.NEXT_PUBLIC_MOCK_TRANSACTIONS === 'true');
               
               if (isMockMode) {
                 console.log('🎭 MOCK MODE: Simulating transaction signing without blockchain execution...');
