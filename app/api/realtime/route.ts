@@ -45,15 +45,23 @@ export async function GET(req: NextRequest) {
           "METAMASK EMBEDDED WALLET SIGNING: The user's MetaMask Embedded Wallet handles transaction signing automatically and seamlessly. " +
           "Do NOT tell users they need to 'approve' or 'sign' anything manually - the wallet integration is automatic. " +
           "Instead say: 'I'll execute the transaction now' or 'Processing the transaction on the blockchain'. " +
-          "PROACTIVE BALANCE CHECKING: Before attempting NFT purchases, check SOL balance and provide smart feedback: " +
-          "• If status='empty': 'Your wallet is empty (0 SOL). You need SOL for both the NFT price and transaction fees.' " +
-          "• If status='insufficient_for_transactions': 'You have [X] SOL, but need more for NFT transactions and fees.' " +
-          "• If status='sufficient': 'Great! You have [X] SOL. Proceeding with the purchase...' " +
+          "MOCK MODE AWARENESS: Always check get_mock_mode_status when starting transactions to understand the current mode: " +
+          "• MOCK/DEMO MODE: Transactions are simulated - you can proceed even with insufficient funds. Always inform users: 'I'm proceeding with this demo transaction - no real SOL will be spent!' " +
+          "• LIVE MODE: Real transactions on blockchain - check balance first and require sufficient funds. " +
+          "PROACTIVE BALANCE CHECKING: " +
+          "• In LIVE MODE: Check SOL balance before purchases and provide smart feedback based on status " +
+          "• In MOCK MODE: Still check balance for educational purposes, but explain that insufficient funds won't prevent the demo transaction " +
+          "Balance feedback examples: " +
+          "• If status='empty' + LIVE MODE: 'Your wallet is empty (0 SOL). You need SOL for both the NFT price and transaction fees.' " +
+          "• If status='empty' + MOCK MODE: 'Your wallet is empty (0 SOL). In a real transaction you'd need SOL, but I'll proceed with this demo transaction.' " +
+          "• If status='insufficient_for_transactions' + LIVE MODE: 'You have [X] SOL, but need more for NFT transactions and fees.' " +
+          "• If status='insufficient_for_transactions' + MOCK MODE: 'You have [X] SOL, which would normally be insufficient, but I'll proceed with this demo transaction.' " +
+          "• If status='sufficient': 'Great! You have [X] SOL.' + (MOCK MODE: add 'This is a demo transaction.' / LIVE MODE: add 'Proceeding with the real purchase...') " +
           "ERROR HANDLING: When transactions fail, immediately use check_sol_balance to diagnose the issue. " +
           "If the error mentions 'Attempt to debit an account but found no record of a prior credit', 'insufficient funds', or 'Transaction simulation failed', " +
           "it's almost always a SOL balance issue. Tell users: 'Your wallet doesn't have enough SOL to complete this transaction. You need SOL for both the NFT price and transaction fees.' " +
           "Then suggest they add SOL to their wallet before trying again. " +
-          "When users want to buy an NFT: 1) Identify the specific NFT from search results, 2) Use isolate_nft_for_confirmation to show only that NFT, 3) STOP and ask user to confirm they want to buy THAT specific NFT, 4) WAIT for explicit 'yes'/'confirm' from user, 5) ONLY THEN get wallet info, 6) CHECK SOL BALANCE FIRST with check_sol_balance before attempting purchase, 7) If insufficient funds, explain clearly and stop, 8) If sufficient funds, proceed with get_listings + buy_nft + request_wallet_signature. " +
+          "When users want to buy an NFT: 1) Identify the specific NFT from search results, 2) Use isolate_nft_for_confirmation to show only that NFT, 3) STOP and ask user to confirm they want to buy THAT specific NFT, 4) WAIT for explicit 'yes'/'confirm' from user, 5) ONLY THEN get wallet info, 6) CHECK MOCK MODE STATUS with get_mock_mode_status, 7) CHECK SOL BALANCE with check_sol_balance, 8) Apply mock mode logic: In LIVE MODE stop if insufficient funds, in MOCK MODE proceed with educational explanation, 9) Proceed with get_listings + buy_nft + request_wallet_signature. " +
           "When users want to sell/list their NFT: 1) Get their wallet info, 2) Get their owned NFTs with get_owned_nfts, 3) Let user pick which NFT and price, 4) Create listing with list_nft + request_wallet_signature. " +
           "Always explain concepts in simple terms, ask for explicit confirmation before spending SOL or listing NFTs, " +
           "and execute transactions when users confirm. You have tools to search NFTs, check listings, view owned NFTs, " +
@@ -247,6 +255,15 @@ export async function GET(req: NextRequest) {
             type: "function",
             name: "check_sol_balance",
             description: "Check the SOL balance of the connected MetaMask Embedded Wallet. PROACTIVE USE: Always check balance BEFORE attempting NFT purchases or major transactions to prevent failures and provide immediate feedback. REACTIVE USE: Also use to diagnose transaction failures, especially insufficient funds errors.",
+            parameters: {
+              type: "object",
+              properties: {},
+            },
+          },
+          {
+            type: "function",
+            name: "get_mock_mode_status",
+            description: "Check if the application is currently in Mock/Demo Mode or Live Mode. Use this to understand whether transactions will be real or simulated. In Mock Mode, you can proceed with transactions even if wallet has insufficient funds.",
             parameters: {
               type: "object",
               properties: {},

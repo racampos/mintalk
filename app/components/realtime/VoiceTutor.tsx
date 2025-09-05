@@ -96,6 +96,8 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
         return 'Checking wallet status...';
       case 'check_sol_balance':
         return 'Checking SOL balance...';
+      case 'get_mock_mode_status':
+        return 'Checking demo mode status...';
       case 'get_owned_nfts':
         return 'Loading your NFT collection...';
       case 'list_nft':
@@ -408,6 +410,18 @@ export default function VoiceTutor({ isActive, onSessionEnd, onConnectionStatusC
               };
             }
           }
+          break;
+
+        case "get_mock_mode_status":
+          // Check if we're in mock mode (user toggle overrides env variable)
+          const currentMockMode = mockMode !== undefined ? mockMode : (process.env.NEXT_PUBLIC_MOCK_TRANSACTIONS === 'true');
+          result = {
+            mock_mode_active: currentMockMode,
+            mode_description: currentMockMode 
+              ? "Demo Mode - Transactions are simulated for demonstration purposes. No real SOL will be spent." 
+              : "Live Mode - Real transactions on Solana blockchain. Real SOL will be spent.",
+            source: mockMode !== undefined ? "user_toggle" : "environment_variable"
+          };
           break;
 
         case "get_owned_nfts":
