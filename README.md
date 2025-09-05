@@ -3,7 +3,7 @@
 > **MetaMask Embedded Wallets Hackathon Entry**  
 > _Making NFT trading accessible to everyone through conversational AI_
 
-**[Live Demo at https://mintalk.fun](https://mintalk.fun) | [GitHub](https://github.com/racampos/mintalk)**
+**[Live Demo](https://mintalk.fun) | [GitHub](https://github.com/racampos/mintalk)**
 
 ---
 
@@ -15,11 +15,9 @@ NFT trading is intimidating for newcomers. Complex wallets, confusing interfaces
 
 **Mintalk** is a revolutionary voice-powered NFT trading platform that combines **MetaMask's Embedded Wallets SDK** with **OpenAI's Realtime API** to create an AI tutor that guides users through their NFT journey - from discovery to purchase.
 
-### "Hey, show me some cool ape NFTs under 2 SOL"
+### User: "Find me the monkey with laser eyes and gold chain"
 
-### "Find me the monkey with laser eyes and gold chain"
-
-### "I found it! That's Degen Monke #2847. Want to buy it?"
+### AI: "I found it! That's Degen Monke #2847. Want to buy it?"
 
 ### **Done. No wallet complexity. No confusion. Just conversation.**
 

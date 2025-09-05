@@ -428,7 +428,7 @@ export default function Home() {
             <div className="mt-8 text-center">
               <p className="text-white/60 mb-4">✨ Popular searches:</p>
               <div className="flex flex-wrap justify-center gap-3">
-                {['fox', 'ape', 'mad', 'bear', 'goat', 'frog'].map((term, index) => (
+                {['fox', 'ape', 'mad', 'degen', 'bear', 'goat', 'frog'].map((term, index) => (
                   <button
                     key={term}
                     onClick={() => {
@@ -617,34 +617,23 @@ export default function Home() {
                     {a.name || "🎨 Untitled NFT"}
                   </h3>
                   
-                  {a.collection && (
-                    <div className="flex items-center gap-2 text-white/70 hover:text-white/90 transition-colors">
-                      <div className="p-1 bg-white/10 rounded-full">
-                        <svg className="flex-shrink-0" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                      </div>
-                      <span className="text-sm truncate">{a.collection}</span>
-                    </div>
-                  )}
-                  
-                  {a.description && (
-                    <p className="text-sm text-white/60 line-clamp-2 leading-relaxed" title={a.description}>
-                      {a.description}
+                  {a.visualDescription && (
+                    <p className="text-sm text-white/60 line-clamp-3 leading-relaxed" title={a.visualDescription}>
+                      {a.visualDescription}
                     </p>
                   )}
                 </div>
                 
-                {/* Futuristic action button */}
-                <div className="pt-4 border-t border-white/10">
+                {/* Collection action button */}
+                <div className="pt-4 border-t border-white/10 text-center">
                   <a
                     href={a.external_url ?? `https://explorer.solana.com/address/${a.id}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="group/btn relative inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-600/20 to-purple-600/20 hover:from-cyan-500/30 hover:to-purple-500/30 text-cyan-400 hover:text-white border border-cyan-500/30 hover:border-cyan-400/50 rounded-xl font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/20"
+                    className="group/btn relative inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-cyan-600/20 to-purple-600/20 hover:from-cyan-500/30 hover:to-purple-500/30 text-cyan-400 hover:text-white border border-cyan-500/30 hover:border-cyan-400/50 rounded-lg font-medium text-xs transition-all duration-300 hover:shadow-md hover:shadow-cyan-500/20"
                   >
-                    <span>🚀 Explore NFT</span>
-                    <svg className="flex-shrink-0 transition-transform duration-300 group-hover/btn:translate-x-1" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span>Explore Collection</span>
+                    <svg className="flex-shrink-0 transition-transform duration-300 group-hover/btn:translate-x-1" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                   </a>

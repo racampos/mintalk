@@ -149,6 +149,41 @@ async function generateVisualDescription(imageUrl, nftName, collectionName) {
   }
 }
 
+// Helper function to select the best available image URL (same logic as search API)
+function selectBestImageUrl(asset) {
+  if (!asset.content) return null;
+  
+  // First, check if canonical image (content.links.image) is from a reliable source
+  const canonicalImage = asset.content.links?.image;
+  if (canonicalImage) {
+    // Only override canonical image if it's from known unreliable sources
+    const isUnreliableSource = canonicalImage.includes('shdw-drive.genesysgo.net');
+    
+    if (!isUnreliableSource) {
+      // Use canonical image - it's the official/main image for this NFT
+      return canonicalImage;
+    }
+  }
+  
+  // Fallback: If canonical image is unreliable or missing, use prioritized alternatives
+  const imageFiles = asset.content.files?.filter(f => 
+    f.uri && f.mime?.startsWith("image/")
+  ) || [];
+  
+  // Priority for alternatives: Arweave > IPFS > other sources > Shadow Drive
+  const alternativeSources = imageFiles.sort((a, b) => {
+    const getSourcePriority = (uri) => {
+      if (uri.includes('arweave.net')) return 1;
+      if (uri.includes('ipfs.') || uri.includes('/ipfs/')) return 2;
+      if (uri.includes('shdw-drive.genesysgo.net')) return 4; // Lowest priority
+      return 3; // Other sources
+    };
+    return getSourcePriority(a.uri) - getSourcePriority(b.uri);
+  });
+  
+  return alternativeSources.length > 0 ? alternativeSources[0].uri : canonicalImage;
+}
+
 // Process a single collection
 async function processCollection(collection, testMode = false) {
   console.log(`\n🔍 Processing collection: ${collection.name}`);
@@ -183,9 +218,7 @@ async function processCollection(collection, testMode = false) {
     const shapedNFTs = final30.map(asset => ({
       id: asset.id,
       name: asset.content?.metadata?.name ?? "Untitled",
-      image: asset.content?.links?.image || 
-             asset.content?.files?.find(f => f.uri && f.mime?.startsWith("image/"))?.uri || 
-             null,
+      image: selectBestImageUrl(asset),
       description: asset.content?.metadata?.description ?? "",
       collection: asset.grouping?.find(g => g.group_key === "collection")?.group_value ?? null,
       compressed: !!asset.compression?.compressed,
